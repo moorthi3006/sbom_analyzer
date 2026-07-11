@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Database
+*.db
+
+# Uploads
+uploads/*
+!uploads/.gitkeep
+
+# Reports
+reports/*
+!reports/.gitkeep
+
+# Graphs
+graphs/*
+!graphs/.gitkeep
+
+# Environment
+.env
+venv/
+.venv/
+
+# VS Code
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db

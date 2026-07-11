@@ -1,0 +1,6 @@
+name,version,package_manager,license,parent
+flask,3.0.3,pip,BSD-3-Clause,
+sqlalchemy,2.0.36,pip,MIT,flask
+werkzeug,3.0.6,pip,BSD-3-Clause,flask
+requests,2.31.0,pip,Apache-2.0,
+urllib3,2.1.0,pip,MIT,requests

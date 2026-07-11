@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Applications - SBOM Analyzer{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Applications</h2>
+            <p class="text-muted mb-0">Manage and monitor application supply chain risk profiles.</p>
+        </div>
+        <a href="{{ url_for('upload.index') }}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Add Application</a>
+    </div>
+
+    {% if not detail_mode %}
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th><a href="?sort=name&order={{ 'desc' if sort == 'name' and order == 'asc' else 'asc' }}">Application</a></th>
+                            <th>Owner</th>
+                            <th><a href="?sort=criticality&order={{ 'desc' if sort == 'criticality' and order == 'asc' else 'asc' }}">Criticality</a></th>
+                            <th>Dependencies</th>
+                            <th><a href="?sort=risk_score&order={{ 'desc' if sort == 'risk_score' and order == 'asc' else 'asc' }}">Risk Score</a></th>
+                            <th>Risk Level</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for app in applications %}
+                        <tr>
+                            <td>
+                                <strong>{{ app.name }}</strong>
+                                <br><small class="text-muted">{{ app.description[:60] if app.description else '' }}</small>
+                            </td>
+                            <td>{{ app.owner }}</td>
+                            <td>
+                                <span class="badge {{ 'bg-dark' if app.business_criticality == 'critical' else 'bg-danger' if app.business_criticality == 'high' else 'bg-warning text-dark' if app.business_criticality == 'medium' else 'bg-secondary' }}">
+                                    {{ app.business_criticality|upper }}
+                                </span>
+                            </td>
+                            <td>{{ app.dependencies.count() }}</td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="progress flex-grow-1" style="height:8px; min-width:80px">
+                                        <div class="progress-bar {{ risk_badge_class(app.risk_level).replace('bg-','bg-') }}" style="width:{{ [app.risk_score, 100]|min }}%"></div>
+                                    </div>
+                                    <span>{{ app.risk_score }}</span>
+                                </div>
+                            </td>
+                            <td><span class="badge {{ risk_badge_class(app.risk_level) }}">{{ app.risk_level|upper }}</span></td>
+                            <td>
+                                <a href="{{ url_for('applications.detail', app_id=app.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a>
+                                <a href="{{ url_for('dependencies.index', app_id=app.id) }}" class="btn btn-sm btn-outline-info"><i class="bi bi-diagram-3"></i></a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="card mb-4">
+        <div class="card-header"><i class="bi bi-app-indicator me-2"></i>{{ selected_app.name }}</div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3"><strong>Owner:</strong> {{ selected_app.owner }}</div>
+                <div class="col-md-3"><strong>Criticality:</strong> <span class="badge bg-secondary">{{ selected_app.business_criticality|upper }}</span></div>
+                <div class="col-md-3"><strong>Risk Score:</strong> {{ selected_app.risk_score }}</div>
+                <div class="col-md-3"><strong>Level:</strong> <span class="badge {{ risk_badge_class(selected_app.risk_level) }}">{{ selected_app.risk_level|upper }}</span></div>
+            </div>
+            <p class="mt-3 text-muted">{{ selected_app.description }}</p>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header">Top Risk Dependencies</div>
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead><tr><th>Package</th><th>Version</th><th>License</th><th>Outdated</th><th>Risk</th></tr></thead>
+                <tbody>
+                    {% for dep in top_deps %}
+                    <tr>
+                        <td>{{ dep.name }}</td>
+                        <td>{{ dep.version }}</td>
+                        <td>{{ dep.license_name }}</td>
+                        <td>{% if dep.is_outdated %}<span class="badge bg-warning text-dark">Yes</span>{% else %}<span class="badge bg-success">No</span>{% endif %}</td>
+                        <td>{{ dep.risk_contribution }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <a href="{{ url_for('applications.index') }}" class="btn btn-outline-secondary mt-3"><i class="bi bi-arrow-left me-1"></i>Back to List</a>
+    {% endif %}
+</div>
+{% endblock %}

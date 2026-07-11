@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Dependency Explorer - SBOM Analyzer{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <h2 class="fw-bold mb-1">Dependency Explorer</h2>
+    <p class="text-muted mb-4">Visualize dependency trees and graph relationships across applications.</p>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label">Select Application</label>
+                    <select class="form-select" name="app_id" onchange="this.form.submit()">
+                        {% for app in applications %}
+                        <option value="{{ app.id }}" {% if app.id == selected_id %}selected{% endif %}>{{ app.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <ul class="nav nav-tabs mb-4" role="tablist">
+        <li class="nav-item">
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#treeView"><i class="bi bi-list-nested me-1"></i>Tree View</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#graphView"><i class="bi bi-diagram-3 me-1"></i>Graph View</button>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+        <div class="tab-pane fade show active" id="treeView">
+            <div class="card">
+                <div class="card-header">Dependency Tree</div>
+                <div class="card-body">
+                    <div id="treeContainer" class="tree-container">
+                        {% if tree_data %}
+                            {% macro render_tree(nodes) %}
+                                <ul class="tree-list">
+                                {% for node in nodes %}
+                                    <li>
+                                        <span class="tree-node">
+                                            <i class="bi bi-box text-primary me-1"></i>
+                                            <strong>{{ node.name }}</strong>
+                                            <span class="text-muted">@{{ node.version }}</span>
+                                            <span class="badge bg-secondary ms-1">depth:{{ node.depth }}</span>
+                                            {% if node.risk_contribution > 20 %}
+                                            <span class="badge bg-danger ms-1">risk:{{ node.risk_contribution }}</span>
+                                            {% endif %}
+                                        </span>
+                                        {% if node.children %}
+                                            {{ render_tree(node.children) }}
+                                        {% endif %}
+                                    </li>
+                                {% endfor %}
+                                </ul>
+                            {% endmacro %}
+                            {{ render_tree(tree_data) }}
+                        {% else %}
+                            <p class="text-muted">No dependencies found for this application.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="tab-pane fade" id="graphView">
+            <div class="card">
+                <div class="card-header">Dependency Graph</div>
+                <div class="card-body">
+                    {% if graph_image %}
+                    <img src="{{ graph_image }}" class="img-fluid rounded" alt="Dependency Graph">
+                    {% else %}
+                    <div id="graphCanvas" style="height:500px; position:relative;">
+                        <canvas id="depGraphCanvas"></canvas>
+                    </div>
+                    {% endif %}
+                    <div class="mt-3">
+                        <span class="badge bg-primary me-2">{{ graph_data.nodes|length }} Nodes</span>
+                        <span class="badge bg-info">{{ graph_data.edges|length }} Edges</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/dependencies.js') }}"></script>
+<script>
+    initDependencyGraph({{ graph_data|tojson }});
+</script>
+{% endblock %}

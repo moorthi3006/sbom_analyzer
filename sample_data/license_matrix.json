@@ -1,0 +1,102 @@
+{
+  "project_license": "Apache-2.0",
+  "licenses": {
+    "MIT": {
+      "compatible_with": [
+        "Apache-2.0",
+        "BSD-3-Clause",
+        "ISC",
+        "MIT"
+      ],
+      "risk_penalty": 0
+    },
+    "Apache-2.0": {
+      "compatible_with": [
+        "MIT",
+        "BSD-3-Clause",
+        "ISC",
+        "Apache-2.0"
+      ],
+      "risk_penalty": 0
+    },
+    "BSD-3-Clause": {
+      "compatible_with": [
+        "MIT",
+        "Apache-2.0",
+        "ISC",
+        "BSD-3-Clause"
+      ],
+      "risk_penalty": 0
+    },
+    "ISC": {
+      "compatible_with": [
+        "MIT",
+        "Apache-2.0",
+        "BSD-3-Clause",
+        "ISC"
+      ],
+      "risk_penalty": 0
+    },
+    "GPL-3.0": {
+      "compatible_with": [
+        "GPL-3.0",
+        "AGPL-3.0"
+      ],
+      "risk_penalty": 15
+    },
+    "GPL-2.0": {
+      "compatible_with": [
+        "GPL-2.0",
+        "GPL-3.0"
+      ],
+      "risk_penalty": 12
+    },
+    "AGPL-3.0": {
+      "compatible_with": [
+        "AGPL-3.0",
+        "GPL-3.0"
+      ],
+      "risk_penalty": 20
+    },
+    "LGPL-3.0": {
+      "compatible_with": [
+        "LGPL-3.0",
+        "GPL-3.0"
+      ],
+      "risk_penalty": 8
+    },
+    "MPL-2.0": {
+      "compatible_with": [
+        "MPL-2.0",
+        "Apache-2.0"
+      ],
+      "risk_penalty": 5
+    },
+    "Unlicense": {
+      "compatible_with": [
+        "MIT",
+        "Unlicense",
+        "CC0-1.0"
+      ],
+      "risk_penalty": 2
+    },
+    "CC0-1.0": {
+      "compatible_with": [
+        "MIT",
+        "Unlicense",
+        "CC0-1.0"
+      ],
+      "risk_penalty": 1
+    },
+    "Proprietary": {
+      "compatible_with": [
+        "Proprietary"
+      ],
+      "risk_penalty": 25
+    },
+    "Unknown": {
+      "compatible_with": [],
+      "risk_penalty": 10
+    }
+  }
+}

@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Maintenance Analysis - SBOM Analyzer{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <h2 class="fw-bold mb-1">Maintenance Analysis</h2>
+    <p class="text-muted mb-4">Track outdated libraries, maintenance health, and update risk.</p>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card stat-card"><div class="card-body text-center">
+                <h3 class="text-warning">{{ stats.total_outdated }}</h3><p class="stat-label mb-0">Outdated Libraries</p>
+            </div></div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card"><div class="card-body text-center">
+                <h3 class="text-danger">{{ stats.critical }}</h3><p class="stat-label mb-0">Critical Risk</p>
+            </div></div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card"><div class="card-body text-center">
+                <h3>{{ stats.high }}</h3><p class="stat-label mb-0">High Risk</p>
+            </div></div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card"><div class="card-body text-center">
+                <h3>{{ stats.medium }}</h3><p class="stat-label mb-0">Medium Risk</p>
+            </div></div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-5">
+                    <select class="form-select" name="app_id">
+                        <option value="">All Applications</option>
+                        {% for app in applications %}
+                        <option value="{{ app.id }}" {% if app_filter == app.id %}selected{% endif %}>{{ app.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-5">
+                    <select class="form-select" name="risk">
+                        <option value="">All Risk Levels</option>
+                        <option value="critical" {% if risk_filter == 'critical' %}selected{% endif %}>Critical</option>
+                        <option value="high" {% if risk_filter == 'high' %}selected{% endif %}>High</option>
+                        <option value="medium" {% if risk_filter == 'medium' %}selected{% endif %}>Medium</option>
+                        <option value="low" {% if risk_filter == 'low' %}selected{% endif %}>Low</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">Filter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Package</th>
+                        <th>Version</th>
+                        <th>Application</th>
+                        <th>Last Updated</th>
+                        <th>Maintenance Risk</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for dep in outdated_deps %}
+                    <tr>
+                        <td><strong>{{ dep.name }}</strong></td>
+                        <td>{{ dep.version }}</td>
+                        <td>{{ dep.application.name }}</td>
+                        <td>{{ dep.last_updated.strftime('%Y-%m-%d') if dep.last_updated else 'Unknown' }}</td>
+                        <td><span class="badge {{ risk_badge_class(dep.maintenance_risk) }}">{{ dep.maintenance_risk|upper }}</span></td>
+                        <td><span class="badge bg-warning text-dark">OUTDATED</span></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

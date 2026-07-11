@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}License Analysis - SBOM Analyzer{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <h2 class="fw-bold mb-1">License Analysis</h2>
+    <p class="text-muted mb-4">License compatibility checking and conflict detection across dependencies.</p>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card stat-card"><div class="card-body text-center">
+                <h3>{{ total_licenses }}</h3><p class="stat-label mb-0">Total License Records</p>
+            </div></div>
+        </div>
+        <div class="col-md-4">
+            <div class="card stat-card"><div class="card-body text-center">
+                <h3 class="text-success">{{ compatible_count }}</h3><p class="stat-label mb-0">Compatible</p>
+            </div></div>
+        </div>
+        <div class="col-md-4">
+            <div class="card stat-card"><div class="card-body text-center">
+                <h3 class="text-danger">{{ conflict_count }}</h3><p class="stat-label mb-0">Conflicts</p>
+            </div></div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="card">
+                <div class="card-header"><i class="bi bi-exclamation-triangle me-2"></i>License Conflicts</div>
+                <div class="card-body p-0">
+                    {% if conflicts %}
+                    <table class="table table-hover mb-0">
+                        <thead><tr><th>License</th><th>SPDX ID</th><th>Package</th><th>Conflict</th></tr></thead>
+                        <tbody>
+                            {% for lic in conflicts[:50] %}
+                            <tr>
+                                <td>{{ lic.license_name }}</td>
+                                <td><code>{{ lic.spdx_id }}</code></td>
+                                <td>{{ lic.dependency.name }}</td>
+                                <td><small class="text-danger">{{ lic.conflict_with }}</small></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <div class="card-body"><p class="text-muted mb-0">No license conflicts detected.</p></div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card mt-4">
+                <div class="card-header"><i class="bi bi-bar-chart me-2"></i>License Distribution</div>
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0">
+                        <thead><tr><th>License</th><th>Count</th><th>Status</th><th>Conflicts</th></tr></thead>
+                        <tbody>
+                            {% for name, info in license_summary.items() %}
+                            <tr>
+                                <td><code>{{ name }}</code></td>
+                                <td>{{ info.count }}</td>
+                                <td><span class="badge {{ 'bg-success' if info.compatibility == 'compatible' else 'bg-danger' }}">{{ info.compatibility|upper }}</span></td>
+                                <td>{{ info.conflicts }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="card">
+                <div class="card-header"><i class="bi bi-grid me-2"></i>License Compatibility Matrix</div>
+                <div class="card-body p-0" style="max-height:600px; overflow-y:auto">
+                    <table class="table table-sm mb-0">
+                        <thead><tr><th>License</th><th>Risk Penalty</th><th>Compatible With</th></tr></thead>
+                        <tbody>
+                            {% for name, info in license_matrix.items() %}
+                            <tr>
+                                <td><code>{{ name }}</code></td>
+                                <td><span class="badge {{ 'bg-danger' if info.risk > 10 else 'bg-warning text-dark' if info.risk > 0 else 'bg-success' }}">{{ info.risk }}</span></td>
+                                <td><small>{{ info.compatible|join(', ') }}</small></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

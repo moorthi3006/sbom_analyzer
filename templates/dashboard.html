@@ -1,0 +1,264 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - SBOM Analyzer{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Security Dashboard</h2>
+            <p class="text-muted mb-0">Welcome back, {{ username }}. Here's your supply chain risk overview.</p>
+        </div>
+        <a href="{{ url_for('upload.index') }}" class="btn btn-primary">
+            <i class="bi bi-cloud-upload me-1"></i>New Scan
+        </a>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-xl-2 col-md-4 col-6">
+            <div class="card stat-card">
+                <div class="card-body">
+                    <div class="stat-icon bg-primary-subtle"><i class="bi bi-app-indicator text-primary"></i></div>
+                    <h3 class="stat-value">{{ cards.total_applications }}</h3>
+                    <p class="stat-label">Applications</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-6">
+            <div class="card stat-card">
+                <div class="card-body">
+                    <div class="stat-icon bg-info-subtle"><i class="bi bi-box-seam text-info"></i></div>
+                    <h3 class="stat-value">{{ cards.total_dependencies }}</h3>
+                    <p class="stat-label">Dependencies</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-6">
+            <div class="card stat-card">
+                <div class="card-body">
+                    <div class="stat-icon bg-danger-subtle"><i class="bi bi-bug text-danger"></i></div>
+                    <h3 class="stat-value">{{ cards.total_vulnerabilities }}</h3>
+                    <p class="stat-label">Vulnerabilities</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-6">
+            <div class="card stat-card">
+                <div class="card-body">
+                    <div class="stat-icon bg-dark-subtle"><i class="bi bi-exclamation-octagon text-danger"></i></div>
+                    <h3 class="stat-value">{{ cards.critical_vulnerabilities }}</h3>
+                    <p class="stat-label">Critical CVEs</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-6">
+            <div class="card stat-card">
+                <div class="card-body">
+                    <div class="stat-icon bg-warning-subtle"><i class="bi bi-shield-exclamation text-warning"></i></div>
+                    <h3 class="stat-value">{{ cards.high_risk_applications }}</h3>
+                    <p class="stat-label">High Risk Apps</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-6">
+            <div class="card stat-card">
+                <div class="card-body">
+                    <div class="stat-icon bg-success-subtle"><i class="bi bi-speedometer text-success"></i></div>
+                    <h3 class="stat-value">{{ cards.average_risk_score }}</h3>
+                    <p class="stat-label">Avg Risk Score</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header"><i class="bi bi-pie-chart me-2"></i>Risk Distribution</div>
+                <div class="card-body">
+                    <canvas id="riskDistChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header"><i class="bi bi-bar-chart me-2"></i>Severity Distribution</div>
+                <div class="card-body">
+                    <canvas id="severityChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header"><i class="bi bi-graph-up me-2"></i>Scan Risk Trend</div>
+                <div class="card-body">
+                    <canvas id="trendChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between">
+                    <span><i class="bi bi-clock-history me-2"></i>Recent Scans</span>
+                    <a href="{{ url_for('applications.index') }}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Application</th>
+                                    <th>Dependencies</th>
+                                    <th>Vulnerabilities</th>
+                                    <th>Risk Score</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for scan in recent_scans %}
+                                <tr>
+                                    <td>{{ scan.application.name }}</td>
+                                    <td>{{ scan.dependency_count }}</td>
+                                    <td><span class="badge bg-danger">{{ scan.vulnerability_count }}</span></td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="progress flex-grow-1 me-2" style="height:6px">
+                                                <div class="progress-bar bg-{{ 'danger' if scan.risk_score > 50 else 'warning' if scan.risk_score > 25 else 'success' }}" style="width:{{ [scan.risk_score, 100]|min }}%"></div>
+                                            </div>
+                                            <small>{{ scan.risk_score }}</small>
+                                        </div>
+                                    </td>
+                                    <td><small>{{ scan.created_at.strftime('%Y-%m-%d') }}</small></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between">
+                    <span><i class="bi bi-bug me-2"></i>Recent Vulnerabilities</span>
+                    <a href="{{ url_for('vulnerabilities.index') }}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>CVE ID</th>
+                                    <th>Severity</th>
+                                    <th>CVSS</th>
+                                    <th>Package</th>
+                                    <th>Patch</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for vuln in recent_vulnerabilities %}
+                                <tr>
+                                    <td><code>{{ vuln.cve_id }}</code></td>
+                                    <td><span class="badge {{ 'bg-dark' if vuln.severity == 'critical' else 'bg-danger' if vuln.severity == 'high' else 'bg-warning text-dark' if vuln.severity == 'medium' else 'bg-info text-dark' }}">{{ vuln.severity|upper }}</span></td>
+                                    <td>{{ vuln.cvss_score }}</td>
+                                    <td>{{ vuln.dependency.name }}</td>
+                                    <td>{% if vuln.patch_available %}<i class="bi bi-check-circle text-success"></i>{% else %}<i class="bi bi-x-circle text-danger"></i>{% endif %}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header"><i class="bi bi-trophy me-2"></i>Top Risk Applications</div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Application</th>
+                                    <th>Owner</th>
+                                    <th>Criticality</th>
+                                    <th>Risk Score</th>
+                                    <th>Level</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for app in top_risk_apps %}
+                                <tr>
+                                    <td><a href="{{ url_for('applications.detail', app_id=app.id) }}">{{ app.name }}</a></td>
+                                    <td>{{ app.owner }}</td>
+                                    <td><span class="badge bg-secondary">{{ app.business_criticality|upper }}</span></td>
+                                    <td>
+                                        <div class="progress" style="height:8px">
+                                            <div class="progress-bar {{ 'bg-danger' if app.risk_level in ['high','critical'] else 'bg-warning' if app.risk_level == 'medium' else 'bg-success' }}" style="width:{{ [app.risk_score, 100]|min }}%"></div>
+                                        </div>
+                                    </td>
+                                    <td><span class="badge {{ 'bg-dark' if app.risk_level == 'critical' else 'bg-danger' if app.risk_level == 'high' else 'bg-warning text-dark' if app.risk_level == 'medium' else 'bg-success' }}">{{ app.risk_level|upper }}</span></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header"><i class="bi bi-info-circle me-2"></i>Quick Stats</div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>License Conflicts</span>
+                            <strong class="text-danger">{{ license_conflicts }}</strong>
+                        </div>
+                        <div class="progress" style="height:6px">
+                            <div class="progress-bar bg-danger" style="width:{{ (license_conflicts / 50 * 100)|int if license_conflicts else 0 }}%"></div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Outdated Libraries</span>
+                            <strong class="text-warning">{{ outdated_count }}</strong>
+                        </div>
+                        <div class="progress" style="height:6px">
+                            <div class="progress-bar bg-warning" style="width:{{ (outdated_count / cards.total_dependencies * 100)|int if cards.total_dependencies else 0 }}%"></div>
+                        </div>
+                    </div>
+                    <hr>
+                    <h6>Recent Reports</h6>
+                    {% if recent_reports %}
+                        {% for report in recent_reports %}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <small>{{ report.filename[:30] }}...</small>
+                            <a href="{{ url_for('reports.download', report_id=report.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-download"></i></a>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted small">No reports generated yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+<script>
+    initDashboardCharts(
+        {{ risk_distribution|tojson }},
+        {{ severity_distribution|tojson }},
+        {{ scan_trend|tojson }}
+    );
+</script>
+{% endblock %}
