@@ -1,3 +1,4 @@
+import hashlib
 from datetime import datetime, timedelta, timezone
 
 
@@ -54,6 +55,27 @@ class MaintenanceChecker:
             "penalty": penalty,
         }
 
+    @staticmethod
+    def _stable_seed(key):
+        """
+        Derives a stable integer seed from `key` using SHA-256, instead of
+        Python's built-in `hash()`, which is intentionally randomized per
+        process (PYTHONHASHSEED) since Python 3.3 as a security hardening
+        measure and therefore unsuitable for anything that must reproduce
+        the same result across restarts. Same technique used in Step 3's
+        vulnerability_scanner.py, for consistency.
+        """
+        digest = hashlib.sha256(key.encode("utf-8")).hexdigest()
+        return int(digest[:16], 16)  # 64 bits of the digest - plenty of entropy
+
     def _estimate_age(self, name, version):
+        """
+        Deterministically estimates an age (in days) for a dependency that
+        has no real `last_updated` date supplied by the SBOM. Same formula
+        and output RANGE (30-829 days) as before - only the source of the
+        number changed, from Python's randomized `hash()` to a stable
+        SHA-256-derived seed, so the same (name, version) always produces
+        the same estimated age, on every machine, every restart.
+        """
         combined = f"{name}{version or ''}"
-        return abs(hash(combined)) % 800 + 30
+        return self._stable_seed(combined) % 800 + 30

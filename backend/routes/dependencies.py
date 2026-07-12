@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, jsonify
 
 from backend.models import Application
 from backend.services.dependency_graph import DependencyGraphBuilder
+from backend.services.vulnerability_chain_analyzer import VulnerabilityChainAnalyzer
 from backend.utils.helpers import login_required
 
 dependencies_bp = Blueprint("dependencies", __name__, url_prefix="/dependencies")
@@ -51,3 +52,16 @@ def api_tree(app_id):
 def api_graph(app_id):
     builder = DependencyGraphBuilder()
     return jsonify(builder.get_graph_data(app_id))
+
+
+@dependencies_bp.route("/api/vulnerability-chains/<int:app_id>")
+@login_required
+def api_vulnerability_chains(app_id):
+    """
+    Step 2 (Option B - Graph-Based Dependency Analysis): returns every path
+    from a top-level dependency down to a vulnerable transitive dependency,
+    e.g. Application -> A -> B -> C (vulnerable), plus a short summary
+    (chain count, deepest chain, highest CVSS reached transitively).
+    """
+    analyzer = VulnerabilityChainAnalyzer()
+    return jsonify(analyzer.summarize_application_exposure(app_id))
