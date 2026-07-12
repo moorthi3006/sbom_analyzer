@@ -11,7 +11,7 @@
             <div class="card">
                 <div class="card-header"><i class="bi bi-cloud-upload me-2"></i>Upload File</div>
                 <div class="card-body">
-                    <form method="POST" enctype="multipart/form-data">
+                    <form id="uploadForm" method="POST" enctype="multipart/form-data">
                         <div class="mb-3">
                             <label class="form-label">SBOM File</label>
                             <div class="upload-zone" id="uploadZone">
@@ -40,9 +40,15 @@
                                 </select>
                             </div>
                         </div>
-                        <button type="submit" class="btn btn-primary mt-4">
-                            <i class="bi bi-search me-1"></i>Analyze SBOM
-                        </button>
+                        <div class="d-flex align-items-center mt-4">
+                            <button type="submit" class="btn btn-primary me-3" id="uploadBtn">
+                                <i class="bi bi-search me-1"></i>Analyze SBOM
+                            </button>
+                            <div class="progress flex-grow-1" style="height:28px; display:none" id="uploadProgress">
+                                <div class="progress-bar" role="progressbar" style="width:0%" id="uploadProgressBar">0%</div>
+                            </div>
+                            <div class="ms-3" id="uploadStatus" style="min-width:220px"></div>
+                        </div>
                     </form>
                 </div>
             </div>
@@ -70,6 +76,12 @@
                         <li class="mb-1">Dependency Graph Building</li>
                         <li>Risk Score Calculation</li>
                     </ol>
+                </div>
+            </div>
+            <div class="card mt-3" id="recentUploadsCard" style="display:none">
+                <div class="card-header"><i class="bi bi-clock-history me-2"></i>Recent Uploads</div>
+                <div class="card-body" id="recentUploadsBody">
+                    <p class="small text-muted">No recent uploads yet.</p>
                 </div>
             </div>
         </div>

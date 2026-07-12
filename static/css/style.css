@@ -1,13 +1,15 @@
 :root {
-    --bg-primary: #0a1628;
-    --bg-secondary: #112240;
-    --bg-card: #1a2d4d;
-    --bg-nav: #0d1f3c;
-    --accent-primary: #4a9eff;
-    --accent-secondary: #00d4aa;
-    --text-primary: #e6f1ff;
-    --text-muted: #8892b0;
-    --border-color: #233554;
+    --bg-primary: #051022; /* darker for deeper contrast */
+    --bg-secondary: #0a1626; /* slightly darker */
+    --bg-card: #0f233f; /* richer card background */
+    --bg-nav: #071428; /* stronger nav background */
+    --accent-primary: #5cc8ff; /* brighter primary accent */
+    --accent-secondary: #3fffc4; /* brighter secondary accent */
+    --text-primary: #ffffff; /* full white for max contrast */
+    --text-muted: #9fb3d4; /* slightly brighter muted text */
+    --border-color: #12263b; /* deeper border for separation */
+    --card-radius: 14px;
+    --shadow-soft: 0 10px 30px rgba(2,8,23,0.55);
 }
 
 body {
@@ -59,28 +61,32 @@ body, button, input, select, textarea { font-family: var(--font-sans); font-size
 
 .card {
     background-color: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.04);
+    border-radius: var(--card-radius);
+    box-shadow: var(--shadow-soft);
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
 }
 
 .card-header {
-    background-color: rgba(17, 34, 64, 0.8);
-    border-bottom: 1px solid var(--border-color);
+    background-color: rgba(10, 26, 48, 0.85);
+    border-bottom: 1px solid rgba(255,255,255,0.03);
     color: var(--text-primary);
     font-weight: 600;
     padding: 0.8rem 1.2rem;
+    border-top-left-radius: calc(var(--card-radius) - 4px);
+    border-top-right-radius: calc(var(--card-radius) - 4px);
 }
 
 .stat-card {
-    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
-    border: 1px solid rgba(255, 255, 255, 0.07);
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    border: 1px solid rgba(255, 255, 255, 0.04);
     background: rgba(255, 255, 255, 0.02);
 }
 
 .stat-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.18);
-    border-color: rgba(74, 158, 255, 0.35);
+    transform: translateY(-4px) scale(1.01);
+    box-shadow: 0 16px 40px rgba(3,11,30,0.45);
+    border-color: rgba(92, 200, 255, 0.25);
 }
 
 .stat-icon {
@@ -148,11 +154,20 @@ body, button, input, select, textarea { font-family: var(--font-sans); font-size
 .btn-primary {
     background-color: var(--accent-primary);
     border-color: var(--accent-primary);
+    color: #06202a;
+    box-shadow: 0 6px 18px rgba(92,200,255,0.12);
+    transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+    border-radius: 10px;
 }
 
 .btn-primary:hover {
-    background-color: #3a8eef;
-    border-color: #3a8eef;
+    transform: translateY(-2px);
+    filter: brightness(1.03);
+    box-shadow: 0 12px 26px rgba(92,200,255,0.18);
+}
+
+.btn {
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
 }
 
 .progress {
@@ -197,7 +212,8 @@ body, button, input, select, textarea { font-family: var(--font-sans); font-size
 
 .upload-zone:hover, .upload-zone.dragover {
     border-color: var(--accent-primary);
-    background-color: rgba(74, 158, 255, 0.05);
+    background-color: rgba(92, 200, 255, 0.03);
+    transform: translateY(-2px);
 }
 
 .upload-zone-icon {
@@ -209,6 +225,26 @@ body, button, input, select, textarea { font-family: var(--font-sans); font-size
 
 .upload-zone input[type="file"] {
     margin-top: 1rem;
+}
+
+/* Upload progress and recent uploads */
+.progress-bar {
+    background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+    color: #0b1a2a;
+    font-weight: 700;
+}
+
+#recentUploadsCard .card-body div { padding: 0.45rem 0; border-bottom: 1px dashed rgba(255,255,255,0.02); }
+
+.upload-success-anim {
+    display: inline-block;
+    animation: pop 0.45s ease-out;
+}
+
+@keyframes pop {
+    0% { transform: scale(0.6); opacity: 0; }
+    60% { transform: scale(1.08); opacity: 1; }
+    100% { transform: scale(1); }
 }
 
 .tree-container {
@@ -249,17 +285,20 @@ body, button, input, select, textarea { font-family: var(--font-sans); font-size
 }
 
 .tree-box {
-    background: rgba(15, 33, 58, 0.95);
-    border: 1px solid rgba(74, 158, 255, 0.18);
+    background: rgba(12, 28, 48, 0.96);
+    border: 1px solid rgba(255,255,255,0.03);
     border-radius: 12px;
     padding: 0.9rem 1rem;
-    box-shadow: 0 16px 30px rgba(0,0,0,0.14);
+    box-shadow: 0 12px 26px rgba(2,8,23,0.45);
+    transition: box-shadow 0.16s ease, transform 0.16s ease;
 }
 
 .tree-box.vulnerable {
-    border-color: rgba(220,53,69,0.9);
-    box-shadow: 0 12px 28px rgba(220,53,69,0.12);
+    border-color: rgba(220,53,69,0.95);
+    box-shadow: 0 14px 32px rgba(220,53,69,0.16);
 }
+
+.tree-box:hover { transform: translateY(-3px); box-shadow: 0 18px 40px rgba(2,8,23,0.5); }
 
 .tree-box.highlight {
     outline: 3px solid rgba(74,158,255,0.14);
