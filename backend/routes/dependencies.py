@@ -29,6 +29,11 @@ def index():
         img_path = os.path.join(current_app.config["GRAPHS_FOLDER"], f"dep_graph_{selected_id}.png")
         if os.path.exists(img_path):
             graph_image = f"/graphs/dep_graph_{selected_id}.png"
+        # Debug: log tree_data size to help investigate empty tree rendering
+        try:
+            current_app.logger.debug(f"Dependency tree for app {selected_id}: {len(tree_data)} nodes")
+        except Exception:
+            current_app.logger.debug(f"Dependency tree for app {selected_id}: unable to determine length")
 
     return render_template(
         "dependencies.html",
@@ -37,6 +42,7 @@ def index():
         tree_data=tree_data,
         graph_data=graph_data,
         graph_image=graph_image,
+        debug=request.args.get("debug", type=int)
     )
 
 

@@ -7,6 +7,7 @@ import networkx as nx
 
 from backend import db
 from backend.models import Dependency
+from backend.models import Vulnerability
 
 
 class DependencyGraphBuilder:
@@ -32,12 +33,19 @@ class DependencyGraphBuilder:
 
         def build_node(dep):
             children = [d for d in deps if d.parent_id == dep.id]
+            # compute vulnerability count for this dependency
+            try:
+                vuln_count = Vulnerability.query.filter_by(dependency_id=dep.id).count()
+            except Exception:
+                vuln_count = 0
             return {
                 "id": dep.id,
                 "name": dep.name,
                 "version": dep.version,
                 "depth": dep.depth,
                 "risk_contribution": dep.risk_contribution,
+                "vuln_count": vuln_count,
+                "is_vulnerable": vuln_count > 0,
                 "children": [build_node(c) for c in children],
             }
 
@@ -48,11 +56,18 @@ class DependencyGraphBuilder:
         nodes = []
         for node_id in graph.nodes:
             data = graph.nodes[node_id]
+            # try to compute vulnerability count for the node
+            try:
+                vuln_count = Vulnerability.query.join(Dependency).filter(Dependency.id == node_id).count()
+            except Exception:
+                vuln_count = 0
             nodes.append({
                 "id": node_id,
                 "label": data.get("label", ""),
                 "version": data.get("version", ""),
                 "depth": data.get("depth", 0),
+                "vuln_count": vuln_count,
+                "is_vulnerable": vuln_count > 0,
             })
 
         edges = [{"source": u, "target": v} for u, v in graph.edges]

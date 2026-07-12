@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request
+from flask import Blueprint, render_template, request, make_response
 
 from backend.models import Vulnerability, Dependency, Application
 from backend.utils.helpers import login_required, severity_badge_class
@@ -28,7 +28,33 @@ def index():
     elif patch_filter == "no":
         query = query.filter(Vulnerability.patch_available.is_(False))
 
-    vulnerabilities = query.order_by(Vulnerability.cvss_score.desc()).limit(200).all()
+    # If export requested, return CSV of matching results
+    export = request.args.get("export", "")
+    vulnerabilities_q = query.order_by(Vulnerability.cvss_score.desc())
+    if export == 'csv':
+        results = vulnerabilities_q.all()
+        # build CSV
+        import io, csv
+        si = io.StringIO()
+        cw = csv.writer(si)
+        cw.writerow(['cve_id', 'severity', 'cvss_score', 'package', 'version', 'patch_available', 'published_date', 'description'])
+        for v in results:
+            cw.writerow([
+                v.cve_id,
+                v.severity,
+                v.cvss_score,
+                v.dependency.name if v.dependency else '',
+                v.dependency.version if v.dependency else '',
+                'yes' if v.patch_available else 'no',
+                v.published_date.strftime('%Y-%m-%d') if v.published_date else '',
+                (v.description or '').replace('\n',' '),
+            ])
+        output = make_response(si.getvalue())
+        output.headers["Content-Disposition"] = "attachment; filename=vulnerabilities.csv"
+        output.headers["Content-type"] = "text/csv"
+        return output
+
+    vulnerabilities = vulnerabilities_q.limit(200).all()
 
     stats = {
         "total": Vulnerability.query.count(),

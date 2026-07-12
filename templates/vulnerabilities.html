@@ -52,7 +52,10 @@
                     </select>
                 </div>
                 <div class="col-md-2">
-                    <button type="submit" class="btn btn-primary w-100"><i class="bi bi-funnel me-1"></i>Filter</button>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary w-50"><i class="bi bi-funnel me-1"></i>Filter</button>
+                        <button type="submit" name="export" value="csv" class="btn btn-outline-light w-50"><i class="bi bi-download me-1"></i>Export CSV</button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -64,32 +67,50 @@
                 <table class="table table-hover mb-0">
                     <thead>
                         <tr>
+                            <th></th>
                             <th>CVE ID</th>
                             <th>Severity</th>
                             <th>CVSS</th>
                             <th>Package</th>
-                            <th>Description</th>
                             <th>Patch</th>
                             <th>Published</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for vuln in vulnerabilities %}
-                        <tr>
-                            <td><code>{{ vuln.cve_id }}</code></td>
-                            <td><span class="badge {{ severity_badge_class(vuln.severity) }}">{{ vuln.severity|upper }}</span></td>
+                        <tr class="vuln-row" data-cve="{{ vuln.cve_id }}">
+                            <td class="text-center"><button class="btn btn-sm btn-toggle-row" aria-expanded="false"><i class="bi bi-chevron-down"></i></button></td>
                             <td>
                                 <div class="d-flex align-items-center gap-2">
-                                    <div class="progress flex-grow-1" style="height:6px;min-width:50px">
-                                        <div class="progress-bar {{ 'bg-dark' if vuln.cvss_score >= 9 else 'bg-danger' if vuln.cvss_score >= 7 else 'bg-warning' if vuln.cvss_score >= 4 else 'bg-info' }}" style="width:{{ vuln.cvss_score * 10 }}%"></div>
+                                    <code class="cve-id">{{ vuln.cve_id }}</code>
+                                    <button class="btn btn-sm btn-outline-secondary copy-cve" title="Copy CVE"><i class="bi bi-clipboard"></i></button>
+                                    <a class="btn btn-sm btn-link" href="https://nvd.nist.gov/vuln/detail/{{ vuln.cve_id }}" target="_blank" title="Open NVD"><i class="bi bi-box-arrow-up-right"></i></a>
+                                </div>
+                            </td>
+                            <td><span class="badge {{ severity_badge_class(vuln.severity) }}">{{ vuln.severity|upper }}</span></td>
+                            <td style="width:220px">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="progress flex-grow-1" style="height:8px;min-width:80px">
+                                        <div class="progress-bar {{ 'bg-dark' if vuln.cvss_score >= 9 else 'bg-danger' if vuln.cvss_score >= 7 else 'bg-warning' if vuln.cvss_score >= 4 else 'bg-info' }}" style="width:{{ (vuln.cvss_score * 10)|int }}%" aria-valuenow="{{ vuln.cvss_score }}"></div>
                                     </div>
                                     <small>{{ vuln.cvss_score }}</small>
                                 </div>
                             </td>
                             <td>{{ vuln.dependency.name }} <small class="text-muted">@{{ vuln.dependency.version }}</small></td>
-                            <td><small>{{ vuln.description[:80] if vuln.description else '' }}...</small></td>
                             <td>{% if vuln.patch_available %}<span class="badge bg-success">Yes</span>{% else %}<span class="badge bg-danger">No</span>{% endif %}</td>
                             <td><small>{{ vuln.published_date.strftime('%Y-%m-%d') if vuln.published_date else 'N/A' }}</small></td>
+                        </tr>
+                        <tr class="vuln-details-row d-none">
+                            <td colspan="7">
+                                <div class="p-3 bg-dark rounded">
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <div><strong>Details for {{ vuln.cve_id }}</strong></div>
+                                        <div><a href="https://nvd.nist.gov/vuln/detail/{{ vuln.cve_id }}" target="_blank" class="btn btn-sm btn-outline-primary">Open NVD</a></div>
+                                    </div>
+                                    <p class="mb-2 text-muted small">{{ vuln.description or 'No description available.' }}</p>
+                                    <div class="small text-muted">Package: {{ vuln.dependency.name }} @{{ vuln.dependency.version }} | CVSS: {{ vuln.cvss_score }} | Severity: {{ vuln.severity }}</div>
+                                </div>
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -98,4 +119,40 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // toggle details
+    document.querySelectorAll('.btn-toggle-row').forEach(function(btn){
+        btn.addEventListener('click', function(){
+            const tr = btn.closest('tr');
+            const details = tr.nextElementSibling;
+            const expanded = btn.getAttribute('aria-expanded') === 'true';
+            if (expanded) {
+                details.classList.add('d-none');
+                btn.setAttribute('aria-expanded','false');
+                btn.innerHTML = '<i class="bi bi-chevron-down"></i>';
+            } else {
+                details.classList.remove('d-none');
+                btn.setAttribute('aria-expanded','true');
+                btn.innerHTML = '<i class="bi bi-chevron-up"></i>';
+            }
+        });
+    });
+
+    // copy CVE
+    document.querySelectorAll('.copy-cve').forEach(function(btn){
+        btn.addEventListener('click', function(e){
+            const tr = btn.closest('tr');
+            const cve = tr.querySelector('.cve-id').textContent.trim();
+            navigator.clipboard.writeText(cve).then(function(){
+                btn.classList.add('btn-success');
+                setTimeout(()=>btn.classList.remove('btn-success'),800);
+            });
+        });
+    });
+});
+</script>
 {% endblock %}

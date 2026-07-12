@@ -5,7 +5,11 @@ from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, PageBreak
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import tempfile
 
 from backend.models import Application, Dependency, Vulnerability, Scan
 
@@ -34,15 +38,15 @@ class PDFReportGenerator:
         normal = styles["Normal"]
 
         elements = []
+        # Cover page
         elements.append(Paragraph("Software Supply Chain Risk Assessment", title_style))
-        elements.append(Spacer(1, 0.3 * inch))
-        elements.append(Paragraph(f"<b>Application:</b> {app.name}", normal))
-        elements.append(Paragraph(f"<b>Owner:</b> {app.owner}", normal))
-        elements.append(Paragraph(f"<b>Business Criticality:</b> {app.business_criticality}", normal))
-        elements.append(Paragraph(f"<b>Risk Score:</b> {app.risk_score} ({app.risk_level.upper()})", normal))
-        elements.append(Paragraph(f"<b>Generated:</b> {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}", normal))
-        elements.append(Spacer(1, 0.3 * inch))
-
+        elements.append(Spacer(1, 0.6 * inch))
+        elements.append(Paragraph(f"Application: <b>{app.name}</b>", styles['Heading3']))
+        elements.append(Paragraph(f"Owner: {app.owner}", normal))
+        elements.append(Paragraph(f"Business Criticality: {app.business_criticality}", normal))
+        elements.append(Paragraph(f"Risk Score: {app.risk_score} ({app.risk_level.upper()})", normal))
+        elements.append(Paragraph(f"Generated: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}", normal))
+        elements.append(Spacer(1, 0.4 * inch))
         elements.append(Paragraph("Executive Summary", heading_style))
         summary_data = [
             ["Metric", "Value"],
@@ -64,7 +68,31 @@ class PDFReportGenerator:
             ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f0f4f8")]),
         ]))
         elements.append(summary_table)
-        elements.append(Spacer(1, 0.3 * inch))
+        elements.append(Spacer(1, 0.2 * inch))
+
+        # Generate small charts (risk distribution by severity, top CVEs)
+        try:
+            # risk by severity pie
+            severities = {'critical':0,'high':0,'medium':0,'low':0}
+            for d in deps:
+                for v in d.vulnerabilities:
+                    sev = (v.severity or 'low').lower()
+                    if sev in severities:
+                        severities[sev] += 1
+            fig1, ax1 = plt.subplots(figsize=(3,3))
+            labels = [k.capitalize() for k in severities.keys()]
+            vals = list(severities.values())
+            colors_list = ['#212529','#dc3545','#ffc107','#00d4aa']
+            ax1.pie(vals, labels=labels, colors=colors_list, autopct=lambda p: '{:.0f}'.format(p*sum(vals)/100) if sum(vals)>0 else '')
+            ax1.set_title('Vulnerabilities by Severity')
+            tmp1 = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
+            fig1.savefig(tmp1.name, bbox_inches='tight')
+            plt.close(fig1)
+            elements.append(Image(tmp1.name, width=3*inch, height=3*inch))
+        except Exception:
+            pass
+
+        elements.append(Spacer(1, 0.2 * inch))
 
         elements.append(Paragraph("Top Risk Dependencies", heading_style))
         top_deps = sorted(deps, key=lambda d: d.risk_contribution, reverse=True)[:15]
@@ -88,7 +116,9 @@ class PDFReportGenerator:
             ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f0f4f8")]),
         ]))
         elements.append(dep_table)
-        elements.append(Spacer(1, 0.3 * inch))
+        elements.append(Spacer(1, 0.2 * inch))
+
+        elements.append(Paragraph("Vulnerability Summary", heading_style))
 
         elements.append(Paragraph("Vulnerability Summary", heading_style))
         all_vulns = []
@@ -119,6 +149,42 @@ class PDFReportGenerator:
             elements.append(vuln_table)
         else:
             elements.append(Paragraph("No vulnerabilities detected.", normal))
+
+        elements.append(Spacer(1, 0.3 * inch))
+
+        # License conflicts
+        try:
+            from backend.models import LicenseRecord
+            conflicts = LicenseRecord.query.filter_by(compatibility='conflict').count()
+        except Exception:
+            conflicts = 0
+        elements.append(Paragraph('License Conflicts', heading_style))
+        elements.append(Paragraph(f'Total conflicts detected: {conflicts}', normal))
+        elements.append(Spacer(1, 0.2 * inch))
+
+        # Maintenance score (simple heuristic: percent of outdated deps)
+        outdated = sum(1 for d in deps if d.is_outdated)
+        maintenance_score = 100 - (outdated / len(deps) * 100) if deps else 100
+        elements.append(Paragraph('Maintenance Score', heading_style))
+        elements.append(Paragraph(f'Score: {int(maintenance_score)} / 100', normal))
+        elements.append(Spacer(1, 0.2 * inch))
+
+        # Recommendations (simple autogenerated bullets)
+        elements.append(Paragraph('Recommendations', heading_style))
+        recs = []
+        if top_vulns:
+            recs.append('Prioritize fixing the top CVEs listed in this report, starting with highest CVSS scores.')
+        if conflicts:
+            recs.append('Resolve license conflicts to avoid compliance risks.')
+        if outdated:
+            recs.append('Update outdated libraries to supported versions to reduce maintenance risk.')
+        if not recs:
+            recs.append('No immediate recommendations; continue regular scanning and monitoring.')
+        for r in recs:
+            elements.append(Paragraph('- ' + r, normal))
+
+        # Add a page break before any detailed tables
+        elements.append(PageBreak())
 
         doc.build(elements)
         return filename, filepath

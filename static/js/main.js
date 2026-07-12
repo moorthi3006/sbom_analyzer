@@ -29,3 +29,21 @@ document.addEventListener('DOMContentLoaded', function () {
         }, 5000);
     });
 });
+
+function showGlobalSpinner() {
+    const s = document.getElementById('globalSpinner');
+    if (s) s.classList.remove('d-none');
+}
+
+function hideGlobalSpinner() {
+    const s = document.getElementById('globalSpinner');
+    if (s) s.classList.add('d-none');
+}
+
+// Optional: show spinner on any form submit to give user feedback
+document.addEventListener('submit', function (e) {
+    const form = e.target;
+    if (form && form.tagName === 'FORM' && !form.classList.contains('no-spinner')) {
+        showGlobalSpinner();
+    }
+});
