@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, session
+from flask import Blueprint, render_template, session, jsonify
 
 from backend.services.dashboard_analytics import DashboardAnalytics
 from backend.utils.helpers import login_required
@@ -25,3 +25,17 @@ def index():
         outdated_count=analytics.get_outdated_count(),
         scan_trend=analytics.get_scan_trend(),
     )
+
+
+@dashboard_bp.route('/api')
+@login_required
+def api_dashboard():
+    analytics = DashboardAnalytics()
+    data = {
+        'cards': analytics.get_summary_cards(),
+        'risk_distribution': analytics.get_risk_distribution(),
+        'severity_distribution': analytics.get_severity_distribution(),
+        'scan_trend': analytics.get_scan_trend(),
+        'top_vulnerable_apps': analytics.get_top_vulnerable_applications(),
+    }
+    return jsonify(data)

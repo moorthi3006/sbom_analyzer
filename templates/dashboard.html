@@ -402,11 +402,30 @@
 {% block extra_js %}
 <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
 <script>
-    initDashboardCharts(
-        {{ risk_distribution|tojson }},
-        {{ severity_distribution|tojson }},
-        {{ scan_trend|tojson }},
-        {{ top_vulnerable_apps|tojson }}
-    );
+    // Fetch dashboard data asynchronously and initialize charts.
+    (function(){
+        showGlobalSpinner();
+        fetch('{{ url_for("dashboard.api_dashboard") }}')
+            .then(r => r.json())
+            .then(data => {
+                initDashboardCharts(
+                    data.risk_distribution || {{ risk_distribution|tojson }},
+                    data.severity_distribution || {{ severity_distribution|tojson }},
+                    data.scan_trend || {{ scan_trend|tojson }},
+                    data.top_vulnerable_apps || {{ top_vulnerable_apps|tojson }}
+                );
+            })
+            .catch(err => {
+                console.error('Failed to load dashboard data', err);
+                // fallback to server-rendered vars
+                initDashboardCharts(
+                    {{ risk_distribution|tojson }},
+                    {{ severity_distribution|tojson }},
+                    {{ scan_trend|tojson }},
+                    {{ top_vulnerable_apps|tojson }}
+                );
+            })
+            .finally(() => hideGlobalSpinner());
+    })();
 </script>
 {% endblock %}

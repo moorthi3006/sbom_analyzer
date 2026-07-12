@@ -1,10 +1,16 @@
 function initDashboardCharts(riskDist, severityDist, scanTrend, topApps) {
+    // read theme tokens from CSS
+    const rootStyle = getComputedStyle(document.documentElement);
+    const textMuted = rootStyle.getPropertyValue('--text-muted').trim() || '#8892b0';
+    const accentPrimary = rootStyle.getPropertyValue('--accent-primary').trim() || '#5cc8ff';
+    const accentSecondary = rootStyle.getPropertyValue('--accent-secondary').trim() || '#3fffc4';
+
     const chartDefaults = {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
             legend: {
-                labels: { color: '#8892b0', font: { size: 11 } }
+                labels: { color: textMuted, font: { size: 11 } }
             }
         }
     };
@@ -19,8 +25,8 @@ function initDashboardCharts(riskDist, severityDist, scanTrend, topApps) {
                 labels: ['Low', 'Medium', 'High', 'Critical'],
                 datasets: [{
                     data: [riskDist.low, riskDist.medium, riskDist.high, riskDist.critical],
-                    backgroundColor: ['#00d4aa', '#ffc107', '#dc3545', '#212529'],
-                    borderColor: '#0a1628',
+                    backgroundColor: [accentSecondary, '#ffc107', '#ff6b6b', '#0b1220'],
+                    borderColor: 'rgba(0,0,0,0.28)',
                     borderWidth: 2,
                     hoverOffset: 8
                 }]
@@ -33,16 +39,16 @@ function initDashboardCharts(riskDist, severityDist, scanTrend, topApps) {
                     legend: {
                         position: 'bottom',
                         labels: {
-                            color: '#8892b0',
+                            color: textMuted,
                             boxWidth: 12,
                             padding: 16
                         }
                     },
                     tooltip: {
-                        backgroundColor: '#111f3f',
+                        backgroundColor: 'rgba(6,12,22,0.92)',
                         titleColor: '#ffffff',
                         bodyColor: '#d1e0ff',
-                        borderColor: '#233554',
+                        borderColor: 'rgba(35,53,84,0.6)',
                         borderWidth: 1,
                         callbacks: {
                             label: context => `${context.label}: ${context.parsed} items`
@@ -77,7 +83,7 @@ function initDashboardCharts(riskDist, severityDist, scanTrend, topApps) {
                 datasets: [{
                     label: 'CVEs',
                     data: [severityDist.critical, severityDist.high, severityDist.medium, severityDist.low],
-                    backgroundColor: ['#212529', '#dc3545', '#ffc107', '#17a2b8'],
+                    backgroundColor: ['#0b1220', '#ff6b6b', '#ffc107', accentPrimary],
                     borderRadius: 4
                 }]
             },
@@ -101,8 +107,8 @@ function initDashboardCharts(riskDist, severityDist, scanTrend, topApps) {
                 datasets: [{
                     label: 'Risk Score',
                     data: scanTrend.scores,
-                    borderColor: '#4a9eff',
-                    backgroundColor: 'rgba(74, 158, 255, 0.1)',
+                    borderColor: accentPrimary,
+                    backgroundColor: 'rgba(92, 200, 255, 0.08)',
                     fill: true,
                     tension: 0.4,
                     pointRadius: 4
@@ -131,7 +137,7 @@ function initDashboardCharts(riskDist, severityDist, scanTrend, topApps) {
                 datasets: [{
                     label: 'CVEs',
                     data: counts,
-                    backgroundColor: '#dc3545',
+                    backgroundColor: '#ff6b6b',
                     borderRadius: 6
                 }]
             },
