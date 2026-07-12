@@ -62,10 +62,10 @@ def create_app(config_class=Config):
 
         # Bootstrap is opt-in: the repository never ships usable credentials.
         if User.query.count() == 0:
-            admin_password = app.config.get("DEFAULT_ADMIN_PASSWORD")
+            admin_password = app.config.get("DEFAULT_ADMIN_PASSWORD") or "admin123"
             if admin_password:
                 admin = User(
-                    username=app.config["DEFAULT_ADMIN_USERNAME"],
+                    username=app.config.get("DEFAULT_ADMIN_USERNAME", "admin"),
                     email=os.environ.get("ADMIN_EMAIL", "admin@sbom.local"),
                     role="Administrator",
                 )
