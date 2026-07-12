@@ -2,7 +2,7 @@
 {% block title %}Dashboard - SBOM Analyzer{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
+<div class="container-fluid py-4" id="dashboardRoot" data-initial='{{ {"risk_distribution": risk_distribution, "severity_distribution": severity_distribution, "scan_trend": scan_trend, "top_vulnerable_apps": top_vulnerable_apps} | tojson }}'>
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2 class="fw-bold mb-1">Security Dashboard</h2>
@@ -257,13 +257,16 @@
                             <tbody>
                                 {% for scan in recent_scans %}
                                 <tr>
+                                    {% set scan_progress_class = 'bg-danger' if scan.risk_score > 50 else 'bg-warning' if scan.risk_score > 25 else 'bg-success' %}
+                                    {% set scan_width = scan.risk_score %}
+                                    {% if scan_width > 100 %}{% set scan_width = 100 %}{% endif %}
                                     <td>{{ scan.application.name }}</td>
                                     <td>{{ scan.dependency_count }}</td>
                                     <td><span class="badge bg-danger">{{ scan.vulnerability_count }}</span></td>
                                     <td>
                                         <div class="d-flex align-items-center">
                                             <div class="progress flex-grow-1 me-2" style="height:6px">
-                                                <div class="progress-bar bg-{{ 'danger' if scan.risk_score > 50 else 'warning' if scan.risk_score > 25 else 'success' }}" style="width:{{ [scan.risk_score, 100]|min }}%"></div>
+                                                <div class="progress-bar {{ scan_progress_class }}" style="width:{{ scan_width }}%"></div>
                                             </div>
                                             <small>{{ scan.risk_score }}</small>
                                         </div>
@@ -341,15 +344,19 @@
                             <tbody>
                                 {% for app in top_risk_apps %}
                                 <tr>
+                                    {% set app_bar_class = 'bg-danger' if app.risk_level in ['high','critical'] else 'bg-warning' if app.risk_level == 'medium' else 'bg-success' %}
+                                    {% set app_width = app.risk_score %}
+                                    {% if app_width > 100 %}{% set app_width = 100 %}{% endif %}
+                                    {% set app_level_badge = 'bg-dark' if app.risk_level == 'critical' else 'bg-danger' if app.risk_level == 'high' else 'bg-warning text-dark' if app.risk_level == 'medium' else 'bg-success' %}
                                     <td><a href="{{ url_for('applications.detail', app_id=app.id) }}">{{ app.name }}</a></td>
                                     <td>{{ app.owner }}</td>
                                     <td><span class="badge bg-secondary">{{ app.business_criticality|upper }}</span></td>
                                     <td>
                                         <div class="progress" style="height:8px">
-                                            <div class="progress-bar {{ 'bg-danger' if app.risk_level in ['high','critical'] else 'bg-warning' if app.risk_level == 'medium' else 'bg-success' }}" style="width:{{ [app.risk_score, 100]|min }}%"></div>
+                                            <div class="progress-bar {{ app_bar_class }}" style="width:{{ app_width }}%"></div>
                                         </div>
                                     </td>
-                                    <td><span class="badge {{ 'bg-dark' if app.risk_level == 'critical' else 'bg-danger' if app.risk_level == 'high' else 'bg-warning text-dark' if app.risk_level == 'medium' else 'bg-success' }}">{{ app.risk_level|upper }}</span></td>
+                                    <td><span class="badge {{ app_level_badge }}">{{ app.risk_level|upper }}</span></td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -367,8 +374,9 @@
                             <span>License Conflicts</span>
                             <strong class="text-danger">{{ license_conflicts }}</strong>
                         </div>
+                        {% set license_pct = (license_conflicts / 50 * 100)|int if license_conflicts else 0 %}
                         <div class="progress" style="height:6px">
-                            <div class="progress-bar bg-danger" style="width:{{ (license_conflicts / 50 * 100)|int if license_conflicts else 0 }}%"></div>
+                            <div class="progress-bar bg-danger" style="width:{{ license_pct }}%"></div>
                         </div>
                     </div>
                     <div class="mb-3">
@@ -376,8 +384,9 @@
                             <span>Outdated Libraries</span>
                             <strong class="text-warning">{{ outdated_count }}</strong>
                         </div>
+                        {% set outdated_pct = (outdated_count / cards.total_dependencies * 100)|int if cards.total_dependencies else 0 %}
                         <div class="progress" style="height:6px">
-                            <div class="progress-bar bg-warning" style="width:{{ (outdated_count / cards.total_dependencies * 100)|int if cards.total_dependencies else 0 }}%"></div>
+                            <div class="progress-bar bg-warning" style="width:{{ outdated_pct }}%"></div>
                         </div>
                     </div>
                     <hr>
@@ -402,27 +411,39 @@
 {% block extra_js %}
 <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
 <script>
-    // Fetch dashboard data asynchronously and initialize charts.
+    // Provide initial server-side data as a JS object and then load live data via API.
+    const initialDashboardData = {
+        risk_distribution: {{ risk_distribution|tojson }},
+        severity_distribution: {{ severity_distribution|tojson }},
+        scan_trend: {{ scan_trend|tojson }},
+        top_vulnerable_apps: {{ top_vulnerable_apps|tojson }}
+    };
+
     (function(){
         showGlobalSpinner();
+        // read initial data from the container dataset to avoid templating inside JS
+        let initialData = {};
+        try {
+            const el = document.getElementById('dashboardRoot');
+            if (el && el.dataset && el.dataset.initial) initialData = JSON.parse(el.dataset.initial);
+        } catch (e) { console.warn('Failed parsing initial dashboard data', e); }
+
         fetch('{{ url_for("dashboard.api_dashboard") }}')
-            .then(r => r.json())
+            .then(r => r.ok ? r.json() : Promise.reject(new Error('network')))
             .then(data => {
-                initDashboardCharts(
-                    data.risk_distribution || {{ risk_distribution|tojson }},
-                    data.severity_distribution || {{ severity_distribution|tojson }},
-                    data.scan_trend || {{ scan_trend|tojson }},
-                    data.top_vulnerable_apps || {{ top_vulnerable_apps|tojson }}
-                );
+                const rd = data.risk_distribution || initialData.risk_distribution || {};
+                const sd = data.severity_distribution || initialData.severity_distribution || {};
+                const st = data.scan_trend || initialData.scan_trend || {labels:[],scores:[]};
+                const ta = data.top_vulnerable_apps || initialData.top_vulnerable_apps || [];
+                initDashboardCharts(rd, sd, st, ta);
             })
             .catch(err => {
                 console.error('Failed to load dashboard data', err);
-                // fallback to server-rendered vars
                 initDashboardCharts(
-                    {{ risk_distribution|tojson }},
-                    {{ severity_distribution|tojson }},
-                    {{ scan_trend|tojson }},
-                    {{ top_vulnerable_apps|tojson }}
+                    initialData.risk_distribution || {},
+                    initialData.severity_distribution || {},
+                    initialData.scan_trend || {labels:[],scores:[]},
+                    initialData.top_vulnerable_apps || []
                 );
             })
             .finally(() => hideGlobalSpinner());
