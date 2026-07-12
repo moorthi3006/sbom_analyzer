@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+{% block title %}Reports - SBOM Analyzer{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Reports</h2>
+            <p class="text-muted mb-0">Generate and download PDF security assessment reports.</p>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-4">
+            <div class="card dashboard-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-uppercase text-muted small mb-1">Create PDF</div>
+                        <div><i class="bi bi-file-earmark-pdf me-2"></i>Generate Report</div>
+                    </div>
+                    <span class="badge badge-soft text-info">Risk summary</span>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('reports.generate') }}">
+                        <div class="mb-3">
+                            <label class="form-label">Select Application</label>
+                            <select class="form-select" name="application_id" required>
+                                <option value="">Choose application...</option>
+                                {% for app in applications %}
+                                <option value="{{ app.id }}">{{ app.name }} (Risk: {{ app.risk_score }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-file-earmark-pdf me-1"></i>Generate PDF Report
+                        </button>
+                    </form>
+                    <hr>
+                    <div class="row g-3 text-center">
+                        <div class="col-4">
+                            <div class="text-muted small">Reports</div>
+                            <div class="fw-semibold">{{ total_reports }}</div>
+                        </div>
+                        <div class="col-4">
+                            <div class="text-muted small">Applications</div>
+                            <div class="fw-semibold">{{ unique_applications }}</div>
+                        </div>
+                        <div class="col-4">
+                            <div class="text-muted small">High risk</div>
+                            <div class="fw-semibold">{{ high_risk_reports }}</div>
+                        </div>
+                    </div>
+                    <div class="mt-3 small text-muted">Average score: {{ average_risk_score | round(1) }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-8">
+            <div class="card dashboard-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-uppercase text-muted small mb-1">Find generated reports</div>
+                        <div><i class="bi bi-archive me-2"></i>Generated Reports</div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <form class="d-flex" method="GET" action="{{ url_for('reports.index') }}">
+                            <input type="text" name="search" class="form-control form-control-sm" placeholder="Search reports or app" value="{{ search_query }}">
+                            <button type="submit" class="btn btn-sm btn-secondary ms-2"><i class="bi bi-search"></i></button>
+                        </form>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small mb-1">Filter by application</label>
+                            <select class="form-select form-select-sm" onchange="this.form.submit()" form="report-filter-form" name="application_id">
+                                <option value="">All applications</option>
+                                {% for app in applications %}
+                                <option value="{{ app.id }}" {% if application_filter == app.id %}selected{% endif %}>{{ app.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 d-flex align-items-end justify-content-end">
+                            <form id="report-filter-form" method="GET" action="{{ url_for('reports.index') }}" class="w-100">
+                                <input type="hidden" name="search" value="{{ search_query }}">
+                            </form>
+                            {% if search_query or application_filter %}
+                            <a href="{{ url_for('reports.index') }}" class="btn btn-sm btn-outline-light">Clear filters</a>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% if reports %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0 align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Filename</th>
+                                    <th>Application</th>
+                                    <th>Generated</th>
+                                    <th>Scan</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for report in reports %}
+                                <tr>
+                                    <td><i class="bi bi-file-pdf text-danger me-2"></i>{{ report.filename }}</td>
+                                    <td>{{ report.application.name }}</td>
+                                    <td>{{ report.generated_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                    <td>{{ report.scan.filename if report.scan else 'N/A' }}</td>
+                                    <td>
+                                        <div class="d-flex gap-2">
+                                            <a href="{{ url_for('reports.download', report_id=report.id) }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-download me-1"></i>Download PDF
+                                            </a>
+                                            <a href="{{ url_for('reports.download_csv', report_id=report.id) }}" class="btn btn-sm btn-outline-secondary">
+                                                <i class="bi bi-file-earmark-spreadsheet me-1"></i>Download CSV
+                                            </a>
+                                            <a href="{{ url_for('reports.print_report', report_id=report.id) }}" target="_blank" class="btn btn-sm btn-outline-info">
+                                                <i class="bi bi-printer me-1"></i>Print
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3 py-3 px-1">
+                        <div class="text-muted small">
+                            Showing {{ (page - 1) * 10 + 1 }} to {{ (page - 1) * 10 + reports|length }} of {{ pagination.total }} reports
+                        </div>
+                        <nav aria-label="Report pagination">
+                            <ul class="pagination pagination-sm mb-0">
+                                <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                                    <a class="page-link" href="{{ url_for('reports.index', search=search_query, application_id=application_filter, page=pagination.prev_num) }}">Previous</a>
+                                </li>
+                                {% for p in range(1, pagination.pages + 1) %}
+                                <li class="page-item {% if p == page %}active{% endif %}">
+                                    <a class="page-link" href="{{ url_for('reports.index', search=search_query, application_id=application_filter, page=p) }}">{{ p }}</a>
+                                </li>
+                                {% endfor %}
+                                <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                                    <a class="page-link" href="{{ url_for('reports.index', search=search_query, application_id=application_filter, page=pagination.next_num) }}">Next</a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-file-earmark-pdf display-1 text-muted"></i>
+                        <p class="text-muted mt-3">No reports match the current filters. Generate a new report or clear filters to view all.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <div class="card dashboard-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-uppercase text-muted small mb-1">Recent scans</div>
+                        <div><i class="bi bi-clock-history me-2"></i>Scan History</div>
+                    </div>
+                    <span class="badge badge-soft text-success">Latest</span>
+                </div>
+                <div class="card-body p-0">
+                    {% if scan_history %}
+                    <div class="list-group list-group-flush">
+                        {% for scan in scan_history %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center bg-transparent">
+                            <div>
+                                <div class="fw-semibold">{{ scan.application.name }}</div>
+                                <div class="small text-muted">{{ scan.filename }} • {{ scan.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
+                            </div>
+                            <span class="badge {{ 'bg-danger' if scan.risk_score > 75 else 'bg-warning text-dark' if scan.risk_score > 40 else 'bg-success' }}">
+                                {{ scan.risk_score | round(0) }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="card-body text-center py-5 text-muted">
+                        No scan history available yet.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card dashboard-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-uppercase text-muted small mb-1">Risk summary</div>
+                        <div><i class="bi bi-graph-up me-2"></i>Report Insights</div>
+                    </div>
+                    <span class="badge badge-soft text-warning">Summary</span>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="text-muted small">Total reports</div>
+                            <div class="fw-semibold">{{ total_reports }}</div>
+                        </div>
+                        <div class="col-4">
+                            <div class="text-muted small">High risk apps</div>
+                            <div class="fw-semibold">{{ high_risk_reports }}</div>
+                        </div>
+                        <div class="col-4">
+                            <div class="text-muted small">Avg risk</div>
+                            <div class="fw-semibold">{{ average_risk_score | round(1) }}</div>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <div class="progress" style="height: 10px; border-radius: 999px;">
+                            <div class="progress-bar bg-danger" role="progressbar" style="width: {{ [average_risk_score, 100] | min }}%;" aria-valuenow="{{ average_risk_score|round(0) }}" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                        <p class="small text-muted mt-3 mb-0">This risk score reflects the average application risk for the reports shown. Use filters to narrow down report sets by application or search term.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %}

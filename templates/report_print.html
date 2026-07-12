@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Printable Report - {{ report.filename }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Report: {{ report.filename }}</h2>
+        <div>
+            <a class="btn btn-sm btn-outline-primary" onclick="window.print();"><i class="bi bi-printer me-1"></i>Print</a>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <h4>{{ app.name }}</h4>
+            <p class="text-muted mb-0">Owner: {{ app.owner }} • Criticality: {{ app.business_criticality|upper }}</p>
+            <p class="mt-2">Risk Score: <strong>{{ app.risk_score }}</strong> ({{ app.risk_level|upper }})</p>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5>Top Vulnerabilities</h5>
+            {% if top_vulns %}
+            <ul>
+                {% for v in top_vulns %}
+                <li><strong>{{ v.cve_id }}</strong> — {{ v.severity|upper }} • CVSS: {{ v.cvss_score }} • {{ v.dependency.name }} {% if v.patch_available %}<span class="badge bg-success">Patch</span>{% endif %}</li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-muted">No vulnerabilities found.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5>License Conflicts</h5>
+            <p class="text-muted">Total conflicts: {{ conflicts }}</p>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5>Maintenance Score</h5>
+            <p class="text-muted">Score: {{ maintenance_score|int }}</p>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5>Dependencies</h5>
+            <table class="table table-sm">
+                <thead><tr><th>Package</th><th>Version</th><th>Risk</th></tr></thead>
+                <tbody>
+                    {% for d in deps %}
+                    <tr>
+                        <td>{{ d.name }}</td>
+                        <td>{{ d.version }}</td>
+                        <td>{{ d.risk_contribution }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

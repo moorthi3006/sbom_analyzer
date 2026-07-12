@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Upload SBOM - SBOM Analyzer{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <h2 class="fw-bold mb-1">Upload SBOM</h2>
+    <p class="text-muted mb-4">Import Software Bill of Materials in JSON or CSV format for risk analysis.</p>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header"><i class="bi bi-cloud-upload me-2"></i>Upload File</div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label class="form-label">SBOM File</label>
+                            <div class="upload-zone" id="uploadZone">
+                                <i class="bi bi-file-earmark-arrow-up upload-zone-icon"></i>
+                                <p>Drag and drop your SBOM file here, or click to browse</p>
+                                <input type="file" class="form-control" name="sbom_file" id="sbomFile" accept=".json,.csv" required>
+                                <small class="text-muted">Supported formats: JSON (CycloneDX), CSV</small>
+                            </div>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Application Name</label>
+                                <input type="text" class="form-control" name="application_name" placeholder="e.g. Payment Gateway API" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Owner</label>
+                                <input type="text" class="form-control" name="owner" placeholder="e.g. Sarah Chen" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Business Criticality</label>
+                                <select class="form-select" name="criticality">
+                                    <option value="low">Low</option>
+                                    <option value="medium" selected>Medium</option>
+                                    <option value="high">High</option>
+                                    <option value="critical">Critical</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary mt-4">
+                            <i class="bi bi-search me-1"></i>Analyze SBOM
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header"><i class="bi bi-info-circle me-2"></i>Sample Files</div>
+                <div class="card-body">
+                    <p class="small text-muted">Use these sample SBOM files to test the upload functionality:</p>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><i class="bi bi-filetype-json text-primary me-2"></i>sample_data/sample_sbom.json</li>
+                        <li class="mb-2"><i class="bi bi-filetype-csv text-success me-2"></i>sample_data/sample_sbom.csv</li>
+                        <li><i class="bi bi-filetype-json text-warning me-2"></i>sample_data/license_matrix.json</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="card mt-3">
+                <div class="card-header"><i class="bi bi-shield-check me-2"></i>Analysis Pipeline</div>
+                <div class="card-body">
+                    <ol class="small mb-0">
+                        <li class="mb-1">SBOM Parsing (JSON/CSV)</li>
+                        <li class="mb-1">Vulnerability Scanning</li>
+                        <li class="mb-1">License Compatibility Check</li>
+                        <li class="mb-1">Maintenance Health Assessment</li>
+                        <li class="mb-1">Dependency Graph Building</li>
+                        <li>Risk Score Calculation</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

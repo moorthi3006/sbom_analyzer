@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Settings - SBOM Analyzer{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <h2 class="fw-bold mb-1">Settings</h2>
+    <p class="text-muted mb-4">Manage your account and application configuration.</p>
+
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header"><i class="bi bi-person me-2"></i>Profile Settings</div>
+                <div class="card-body">
+                    <form method="POST">
+                        <input type="hidden" name="action" value="update_profile">
+                        <div class="mb-3">
+                            <label class="form-label">Username</label>
+                            <input type="text" class="form-control" value="{{ user.username }}" disabled>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" name="email" value="{{ user.email }}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Role</label>
+                            <input type="text" class="form-control" value="{{ user.role|upper }}" disabled>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Save Profile</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header"><i class="bi bi-key me-2"></i>Change Password</div>
+                <div class="card-body">
+                    <form method="POST">
+                        <input type="hidden" name="action" value="change_password">
+                        <div class="mb-3">
+                            <label class="form-label">Current Password</label>
+                            <input type="password" class="form-control" name="current_password" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">New Password</label>
+                            <input type="password" class="form-control" name="new_password" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Confirm New Password</label>
+                            <input type="password" class="form-control" name="confirm_password" required>
+                        </div>
+                        <button type="submit" class="btn btn-warning">Change Password</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header"><i class="bi bi-gear me-2"></i>System Configuration</div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <p><strong>Database:</strong> SQLite</p>
+                            <p><strong>Upload Folder:</strong> {{ config.UPLOAD_FOLDER }}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <p><strong>Reports Folder:</strong> {{ config.REPORTS_FOLDER }}</p>
+                            <p><strong>Graphs Folder:</strong> {{ config.GRAPHS_FOLDER }}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <p><strong>Max Upload:</strong> {{ (config.MAX_CONTENT_LENGTH / 1024 / 1024)|int }} MB</p>
+                            <p><strong>Allowed Formats:</strong> JSON, CSV</p>
+                        </div>
+                    </div>
+                    <hr>
+                    <h6>Risk Score Thresholds</h6>
+                    <div class="row">
+                        <div class="col-md-3"><span class="badge bg-success">Low: &lt; {{ config.RISK_THRESHOLDS.low }}</span></div>
+                        <div class="col-md-3"><span class="badge bg-warning text-dark">Medium: &lt; {{ config.RISK_THRESHOLDS.medium }}</span></div>
+                        <div class="col-md-3"><span class="badge bg-danger">High: &lt; {{ config.RISK_THRESHOLDS.high }}</span></div>
+                        <div class="col-md-3"><span class="badge bg-dark">Critical: &gt;= {{ config.RISK_THRESHOLDS.high }}</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
