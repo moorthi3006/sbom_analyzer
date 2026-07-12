@@ -2,13 +2,14 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 
 from backend import db
 from backend.models import User
-from backend.utils.helpers import login_required
+from backend.utils.helpers import csrf_protect, login_required
 
 settings_bp = Blueprint("settings", __name__, url_prefix="/settings")
 
 
 @settings_bp.route("/", methods=["GET", "POST"])
 @login_required
+@csrf_protect
 def index():
     user = User.query.get(session["user_id"])
 

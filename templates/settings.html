@@ -12,6 +12,7 @@
                 <div class="card-header"><i class="bi bi-person me-2"></i>Profile Settings</div>
                 <div class="card-body">
                     <form method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <input type="hidden" name="action" value="update_profile">
                         <div class="mb-3">
                             <label class="form-label">Username</label>
@@ -35,6 +36,7 @@
                 <div class="card-header"><i class="bi bi-key me-2"></i>Change Password</div>
                 <div class="card-body">
                     <form method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <input type="hidden" name="action" value="change_password">
                         <div class="mb-3">
                             <label class="form-label">Current Password</label>

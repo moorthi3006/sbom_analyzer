@@ -1,6 +1,7 @@
+import secrets
 from functools import wraps
 
-from flask import session, redirect, url_for, flash
+from flask import abort, request, session, redirect, url_for, flash
 
 
 def login_required(f):
@@ -9,6 +10,26 @@ def login_required(f):
         if "user_id" not in session:
             flash("Please log in to access this page.", "warning")
             return redirect(url_for("auth.login"))
+        return f(*args, **kwargs)
+    return decorated_function
+
+
+def csrf_token():
+    """Create and return the current session's anti-forgery token."""
+    if "csrf_token" not in session:
+        session["csrf_token"] = secrets.token_urlsafe(32)
+    return session["csrf_token"]
+
+
+def csrf_protect(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if request.method in {"GET", "HEAD", "OPTIONS"}:
+            return f(*args, **kwargs)
+        submitted = request.form.get("csrf_token", "")
+        expected = session.get("csrf_token", "")
+        if not expected or not submitted or not secrets.compare_digest(submitted, expected):
+            abort(400, description="Your form expired. Refresh the page and try again.")
         return f(*args, **kwargs)
     return decorated_function
 

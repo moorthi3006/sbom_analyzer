@@ -1,16 +1,19 @@
 import os
+from uuid import uuid4
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
 from werkzeug.utils import secure_filename
 
 from backend.services.sbom_processor import SBOMProcessor
-from backend.utils.helpers import login_required, allowed_file
+from backend import db
+from backend.utils.helpers import csrf_protect, login_required, allowed_file
 
 upload_bp = Blueprint("upload", __name__, url_prefix="/upload")
 
 
 @upload_bp.route("/", methods=["GET", "POST"])
 @login_required
+@csrf_protect
 def index():
     if request.method == "POST":
         if "sbom_file" not in request.files:
@@ -33,10 +36,13 @@ def index():
         if not application_name or not owner:
             flash("Application name and owner are required.", "danger")
             return redirect(request.url)
+        if len(application_name) > 150 or len(owner) > 100 or criticality not in {"low", "medium", "high", "critical"}:
+            flash("Please provide valid application details.", "danger")
+            return redirect(request.url)
 
         filename = secure_filename(file.filename)
         ext = filename.rsplit(".", 1)[1].lower()
-        filepath = os.path.join(current_app.config["UPLOAD_FOLDER"], filename)
+        filepath = os.path.join(current_app.config["UPLOAD_FOLDER"], f"{uuid4().hex}.{ext}")
         file.save(filepath)
 
         try:
@@ -51,7 +57,9 @@ def index():
             )
             return redirect(url_for("applications.detail", app_id=app.id))
         except Exception as e:
-            flash(f"Error processing SBOM: {str(e)}", "danger")
+            db.session.rollback()
+            current_app.logger.exception("SBOM processing failed")
+            flash("The SBOM could not be processed. Check that it is a valid supported SBOM and try again.", "danger")
             return redirect(request.url)
 
     return render_template("upload.html")

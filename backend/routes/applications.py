@@ -3,7 +3,7 @@ from sqlalchemy import or_
 
 from backend import db
 from backend.models import Application, Scan
-from backend.utils.helpers import login_required, risk_badge_class
+from backend.utils.helpers import csrf_protect, login_required, risk_badge_class
 
 applications_bp = Blueprint("applications", __name__, url_prefix="/applications")
 
@@ -69,6 +69,7 @@ def index():
 
 @applications_bp.route("/delete/<int:app_id>", methods=["POST"])
 @login_required
+@csrf_protect
 def delete(app_id):
     app = Application.query.get_or_404(app_id)
     db.session.delete(app)
@@ -78,6 +79,7 @@ def delete(app_id):
 
 @applications_bp.route('/scan/<int:app_id>', methods=['POST'])
 @login_required
+@csrf_protect
 def scan(app_id):
     app = Application.query.get_or_404(app_id)
     # create a queued scan entry

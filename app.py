@@ -1,6 +1,6 @@
 import os
 
-from flask import Flask, send_from_directory
+from flask import Flask, send_from_directory, render_template
 from config import Config
 from backend import db
 
@@ -8,6 +8,8 @@ from backend import db
 def create_app(config_class=Config):
     app = Flask(__name__, template_folder="templates", static_folder="static")
     app.config.from_object(config_class)
+    from backend.utils.helpers import csrf_token
+    app.jinja_env.globals["csrf_token"] = csrf_token
 
     for folder_key in (
         "UPLOAD_FOLDER",
@@ -58,20 +60,24 @@ def create_app(config_class=Config):
 
         db.create_all()
 
-        # Create ONLY the login account.
-        # DO NOT load fake applications or fake vulnerabilities.
+        # Bootstrap is opt-in: the repository never ships usable credentials.
         if User.query.count() == 0:
-            from backend.models import User
+            admin_password = app.config.get("DEFAULT_ADMIN_PASSWORD")
+            if admin_password:
+                admin = User(
+                    username=app.config["DEFAULT_ADMIN_USERNAME"],
+                    email=os.environ.get("ADMIN_EMAIL", "admin@sbom.local"),
+                    role="Administrator",
+                )
+                admin.set_password(admin_password)
+                db.session.add(admin)
+                db.session.commit()
+            else:
+                app.logger.warning("No admin created. Set ADMIN_PASSWORD before the first startup.")
 
-            admin = User(
-                username="admin",
-                email="admin@sbom.local",
-    role="Administrator"
-)
-            admin.set_password("admin123")
-
-            db.session.add(admin)
-            db.session.commit()
+    @app.errorhandler(413)
+    def file_too_large(_error):
+        return render_template("upload.html"), 413
 
     return app
 
@@ -82,7 +88,7 @@ if __name__ == "__main__":
     print("=" * 60)
     print("SBOM Analyzer")
     print("Running at http://127.0.0.1:5000")
-    print("Login : admin / admin123")
+    print("Set ADMIN_PASSWORD (and preferably SECRET_KEY) before first startup.")
     print("=" * 60)
 
-    application.run(debug=True)
+    application.run(debug=os.environ.get("FLASK_DEBUG", "false").lower() == "true")

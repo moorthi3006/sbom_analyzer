@@ -73,9 +73,10 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('auth.logout') }}">
-                            <i class="bi bi-box-arrow-right me-1"></i>Logout
-                        </a>
+                        <form method="POST" action="{{ url_for('auth.logout') }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button class="nav-link btn btn-link" type="submit"><i class="bi bi-box-arrow-right me-1"></i>Logout</button>
+                        </form>
                     </li>
                 </ul>
             </div>

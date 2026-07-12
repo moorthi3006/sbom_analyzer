@@ -18,7 +18,7 @@ class SBOMProcessor:
 
     def __init__(self, app_config):
         self.parser = SBOMParser()
-        self.scanner = VulnerabilityScanner()
+        self.scanner = VulnerabilityScanner(database_path=app_config.get("VULNERABILITY_DB_PATH"))
         self.license_checker = LicenseChecker()
         self.maintenance_checker = MaintenanceChecker()
         self.risk_engine = RiskScoreEngine(app_config.get("RISK_THRESHOLDS"))
@@ -28,6 +28,11 @@ class SBOMProcessor:
 
     def process_upload(self, filepath, file_format, application_name, owner, criticality, app_config):
         components = self.parser.parse(filepath, file_format)
+        if not components:
+            raise ValueError("The SBOM contains no components")
+        max_components = app_config.get("MAX_SBOM_COMPONENTS", 10000)
+        if len(components) > max_components:
+            raise ValueError(f"The SBOM has too many components (maximum: {max_components})")
 
         app = Application.query.filter_by(name=application_name).first()
         if not app:
@@ -40,7 +45,10 @@ class SBOMProcessor:
             db.session.add(app)
             db.session.flush()
         else:
-            Dependency.query.filter_by(application_id=app.id).delete()
+            # ORM deletes preserve cascade behaviour for child findings.
+            # The caller rolls back this replacement if a later stage fails.
+            for old_dependency in app.dependencies.all():
+                db.session.delete(old_dependency)
             db.session.flush()
 
         dep_objects = []

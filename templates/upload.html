@@ -12,6 +12,7 @@
                 <div class="card-header"><i class="bi bi-cloud-upload me-2"></i>Upload File</div>
                 <div class="card-body">
                     <form method="POST" enctype="multipart/form-data">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <div class="mb-3">
                             <label class="form-label">SBOM File</label>
                             <div class="upload-zone" id="uploadZone">

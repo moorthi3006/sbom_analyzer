@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 
 from backend.models import User
-from backend.utils.helpers import login_required
+from backend.utils.helpers import csrf_protect, login_required
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -14,6 +14,7 @@ def index():
 
 
 @auth_bp.route("/login", methods=["GET", "POST"])
+@csrf_protect
 def login():
     if request.method == "POST":
         username = request.form.get("username", "").strip()
@@ -32,8 +33,9 @@ def login():
     return render_template("login.html")
 
 
-@auth_bp.route("/logout")
+@auth_bp.route("/logout", methods=["POST"])
 @login_required
+@csrf_protect
 def logout():
     session.clear()
     flash("You have been logged out.", "info")

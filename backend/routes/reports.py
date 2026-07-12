@@ -16,7 +16,7 @@ from sqlalchemy import or_
 from backend import db
 from backend.models import Application, Report, Scan
 from backend.services.report_generator import PDFReportGenerator
-from backend.utils.helpers import login_required
+from backend.utils.helpers import csrf_protect, login_required
 from backend.models import Vulnerability, Dependency, LicenseRecord
 import io, csv
 
@@ -77,6 +77,7 @@ def index():
 
 @reports_bp.route("/generate", methods=["POST"])
 @login_required
+@csrf_protect
 def generate():
     app_id = request.form.get("application_id", type=int)
     if not app_id:
