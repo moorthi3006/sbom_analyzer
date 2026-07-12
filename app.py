@@ -9,7 +9,12 @@ def create_app(config_class=Config):
     app = Flask(__name__, template_folder="templates", static_folder="static")
     app.config.from_object(config_class)
 
-    for folder_key in ("UPLOAD_FOLDER", "REPORTS_FOLDER", "GRAPHS_FOLDER", "SAMPLE_DATA_FOLDER"):
+    for folder_key in (
+        "UPLOAD_FOLDER",
+        "REPORTS_FOLDER",
+        "GRAPHS_FOLDER",
+        "SAMPLE_DATA_FOLDER",
+    ):
         os.makedirs(app.config[folder_key], exist_ok=True)
 
     db.init_app(app)
@@ -41,19 +46,43 @@ def create_app(config_class=Config):
         return send_from_directory(app.config["GRAPHS_FOLDER"], filename)
 
     with app.app_context():
-        from backend.models import User, Application, Dependency, Vulnerability, LicenseRecord, Scan, Report  # noqa: F401
+        from backend.models import (
+            User,
+            Application,
+            Dependency,
+            Vulnerability,
+            LicenseRecord,
+            Scan,
+            Report,
+        )
+
         db.create_all()
-        from backend.utils.seed_data import initialize_database
-        initialize_database()
+
+        # Create ONLY the login account.
+        # DO NOT load fake applications or fake vulnerabilities.
+        if User.query.count() == 0:
+            from backend.models import User
+
+            admin = User(
+                username="admin",
+                email="admin@sbom.local",
+    role="Administrator"
+)
+            admin.set_password("admin123")
+
+            db.session.add(admin)
+            db.session.commit()
 
     return app
 
 
 if __name__ == "__main__":
     application = create_app()
+
     print("=" * 60)
-    print("  SBOM Analyzer - Software Supply Chain Risk Scorer")
-    print("  Running at http://127.0.0.1:5000")
-    print("  Login: admin / admin123")
+    print("SBOM Analyzer")
+    print("Running at http://127.0.0.1:5000")
+    print("Login : admin / admin123")
     print("=" * 60)
-    application.run(debug=True, host="0.0.0.0", port=5000)
+
+    application.run(debug=True)
