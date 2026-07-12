@@ -20,6 +20,7 @@ def index():
         recent_vulnerabilities=analytics.get_recent_vulnerabilities(),
         recent_reports=analytics.get_recent_reports(),
         top_risk_apps=analytics.get_top_risk_applications(),
+        top_vulnerable_apps=analytics.get_top_vulnerable_applications(),
         license_conflicts=analytics.get_license_conflict_count(),
         outdated_count=analytics.get_outdated_count(),
         scan_trend=analytics.get_scan_trend(),

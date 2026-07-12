@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # SBOM Analyzer — Software Supply Chain Risk Scorer
 
 Enterprise-style modular application for analyzing Software Bill of Materials (SBOM), assessing supply chain security risks, and generating actionable security reports.
@@ -96,3 +97,6 @@ Sample SBOM files are available in `sample_data/` for testing uploads.
 ## License
 
 Built for cybersecurity hackathon demonstration purposes.
+=======
+
+>>>>>>> a4cb1a31f40fd886ea01b9a91b169719c521f9d6

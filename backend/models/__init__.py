@@ -39,6 +39,11 @@ class Application(db.Model):
     scans = db.relationship("Scan", backref="application", lazy="dynamic", cascade="all, delete-orphan")
     reports = db.relationship("Report", backref="application", lazy="dynamic", cascade="all, delete-orphan")
 
+    @property
+    def status(self):
+        latest_scan = self.scans.order_by(Scan.created_at.desc()).first()
+        return latest_scan.status if latest_scan else "no scans"
+
 
 class Dependency(db.Model):
     __tablename__ = "dependencies"

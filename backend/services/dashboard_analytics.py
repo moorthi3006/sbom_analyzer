@@ -14,14 +14,18 @@ class DashboardAnalytics:
             Application.risk_level.in_(["high", "critical"])
         ).count()
         avg_risk = db.session.query(db.func.avg(Application.risk_score)).scalar() or 0
+        average_cvss = db.session.query(db.func.avg(Vulnerability.cvss_score)).scalar() or 0
+        total_scans = Scan.query.count()
 
         return {
             "total_applications": total_apps,
             "total_dependencies": total_deps,
+            "total_scans": total_scans,
             "total_vulnerabilities": total_vulns,
             "critical_vulnerabilities": critical_vulns,
             "high_risk_applications": high_risk_apps,
             "average_risk_score": round(avg_risk, 1),
+            "average_cvss": round(average_cvss, 1),
         }
 
     def get_risk_distribution(self):
@@ -65,3 +69,19 @@ class DashboardAnalytics:
             labels.append(scan.created_at.strftime("%m/%d"))
             scores.append(scan.risk_score)
         return {"labels": labels, "scores": scores}
+
+    def get_top_vulnerable_applications(self, limit=10):
+        # Return top applications by vulnerability count as list of dicts
+        from sqlalchemy import func
+        q = (
+            db.session.query(Application.id, Application.name, func.count(Vulnerability.id).label('vuln_count'))
+            .join(Dependency, Dependency.application_id == Application.id)
+            .join(Vulnerability, Vulnerability.dependency_id == Dependency.id)
+            .group_by(Application.id)
+            .order_by(func.count(Vulnerability.id).desc())
+            .limit(limit)
+        )
+        results = []
+        for app_id, name, vuln_count in q:
+            results.append({"id": app_id, "name": name, "vuln_count": int(vuln_count)})
+        return results

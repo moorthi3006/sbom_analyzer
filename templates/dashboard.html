@@ -13,7 +13,21 @@
         </a>
     </div>
 
-    <div class="row g-3 mb-4">
+    <div class="dashboard-hero p-4 mb-4 rounded-4">
+        <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3">
+            <div>
+                <p class="text-uppercase text-muted mb-2 small">Real-time security snapshot</p>
+                <h3 class="fw-semibold mb-1">Keep supply chain risk under control</h3>
+                <p class="text-muted mb-0">Review scan findings, trends, and top exposures from a single unified dashboard.</p>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+                <span class="badge badge-soft text-success rounded-pill py-2 px-3">Ready for action</span>
+                <span class="badge badge-soft text-info rounded-pill py-2 px-3">Next scan recommended</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
         <div class="col-xl-2 col-md-4 col-6">
             <div class="card stat-card">
                 <div class="card-body">
@@ -29,6 +43,15 @@
                     <div class="stat-icon bg-info-subtle"><i class="bi bi-box-seam text-info"></i></div>
                     <h3 class="stat-value">{{ cards.total_dependencies }}</h3>
                     <p class="stat-label">Dependencies</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-6">
+            <div class="card stat-card">
+                <div class="card-body">
+                    <div class="stat-icon bg-secondary-subtle"><i class="bi bi-hdd-network text-secondary"></i></div>
+                    <h3 class="stat-value">{{ cards.total_scans }}</h3>
+                    <p class="stat-label">Total Scans</p>
                 </div>
             </div>
         </div>
@@ -53,18 +76,9 @@
         <div class="col-xl-2 col-md-4 col-6">
             <div class="card stat-card">
                 <div class="card-body">
-                    <div class="stat-icon bg-warning-subtle"><i class="bi bi-shield-exclamation text-warning"></i></div>
-                    <h3 class="stat-value">{{ cards.high_risk_applications }}</h3>
-                    <p class="stat-label">High Risk Apps</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-2 col-md-4 col-6">
-            <div class="card stat-card">
-                <div class="card-body">
-                    <div class="stat-icon bg-success-subtle"><i class="bi bi-speedometer text-success"></i></div>
-                    <h3 class="stat-value">{{ cards.average_risk_score }}</h3>
-                    <p class="stat-label">Avg Risk Score</p>
+                    <div class="stat-icon bg-warning-subtle"><i class="bi bi-bar-chart-line text-warning"></i></div>
+                    <h3 class="stat-value">{{ cards.average_cvss }}</h3>
+                    <p class="stat-label">Avg CVSS</p>
                 </div>
             </div>
         </div>
@@ -72,36 +86,160 @@
 
     <div class="row g-4 mb-4">
         <div class="col-lg-4">
-            <div class="card h-100">
-                <div class="card-header"><i class="bi bi-pie-chart me-2"></i>Risk Distribution</div>
+            <div class="card dashboard-card summary-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div><i class="bi bi-shield-check me-2"></i>Risk Summary</div>
+                    <span class="badge badge-soft text-info">Overview</span>
+                </div>
                 <div class="card-body">
-                    <canvas id="riskDistChart" height="250"></canvas>
+                    <div class="summary-metric mb-3">
+                        <div class="summary-title">Average Risk Score</div>
+                        <div class="summary-value">{{ cards.average_risk_score }}</div>
+                    </div>
+                    <div class="summary-metric mb-3">
+                        <div class="summary-title">High Risk Applications</div>
+                        <div class="summary-value">{{ cards.high_risk_applications }}</div>
+                    </div>
+                    <div class="summary-pill-group mt-2">
+                        <span class="summary-pill bg-success">Low: {{ risk_distribution.low }}</span>
+                        <span class="summary-pill bg-warning text-dark">Medium: {{ risk_distribution.medium }}</span>
+                        <span class="summary-pill bg-danger">High: {{ risk_distribution.high }}</span>
+                        <span class="summary-pill bg-dark">Critical: {{ risk_distribution.critical }}</span>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="col-lg-4">
-            <div class="card h-100">
-                <div class="card-header"><i class="bi bi-bar-chart me-2"></i>Severity Distribution</div>
+            <div class="card dashboard-card summary-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div><i class="bi bi-bug-fill me-2"></i>Vulnerability Count</div>
+                    <span class="badge badge-soft text-danger">Severity</span>
+                </div>
                 <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Total CVEs</span>
+                        <strong>{{ cards.total_vulnerabilities }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Critical</span>
+                        <strong>{{ severity_distribution.critical }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>High</span>
+                        <strong>{{ severity_distribution.high }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Medium</span>
+                        <strong>{{ severity_distribution.medium }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Low</span>
+                        <strong>{{ severity_distribution.low }}</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card dashboard-card summary-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div><i class="bi bi-clock-history me-2"></i>Recent Scans</div>
+                    <span class="badge badge-soft text-success">Latest</span>
+                </div>
+                <div class="card-body">
+                    <div class="summary-metric mb-3">
+                        <div class="summary-title">Recent scan count</div>
+                        <div class="summary-value">{{ recent_scans|length }}</div>
+                    </div>
+                    {% if recent_scans %}
+                    <div class="summary-metric">
+                        <div class="summary-title">Latest scan</div>
+                        <div class="summary-value">{{ recent_scans[0].application.name }}</div>
+                        <small class="text-muted">{{ recent_scans[0].created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                    </div>
+                    {% else %}
+                    <p class="text-muted small mb-0">No recent scans available.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-4">
+            <div class="card h-100 chart-card dashboard-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div><i class="bi bi-pie-chart me-2"></i>Risk Distribution</div>
+                    <span class="badge badge-soft text-info">Distribution</span>
+                </div>
+                <div class="card-body py-4">
+                    <div class="position-relative" style="min-height: 260px;">
+                        <canvas id="riskDistChart"></canvas>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2 pt-3 justify-content-center">
+                        <span class="badge bg-success">Low: {{ risk_distribution.low }}</span>
+                        <span class="badge bg-warning text-dark">Medium: {{ risk_distribution.medium }}</span>
+                        <span class="badge bg-danger">High: {{ risk_distribution.high }}</span>
+                        <span class="badge bg-dark">Critical: {{ risk_distribution.critical }}</span>
+                    </div>
+                </div>
+                <div class="card-footer text-muted small">
+                    Updated from the latest scan data to highlight current risk clusters.
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card h-100 dashboard-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div><i class="bi bi-bar-chart me-2"></i>Severity Distribution</div>
+                    <span class="badge badge-soft text-warning">Severity</span>
+                </div>
+                <div class="card-body py-4">
                     <canvas id="severityChart" height="250"></canvas>
                 </div>
+                <div class="card-footer text-muted small">
+                    Break down vulnerabilities by severity to help prioritize remediation.
+                </div>
             </div>
         </div>
         <div class="col-lg-4">
-            <div class="card h-100">
-                <div class="card-header"><i class="bi bi-graph-up me-2"></i>Scan Risk Trend</div>
-                <div class="card-body">
+            <div class="card h-100 dashboard-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div><i class="bi bi-graph-up me-2"></i>Scan Risk Trend</div>
+                    <span class="badge badge-soft text-success">Trend</span>
+                </div>
+                <div class="card-body py-4">
                     <canvas id="trendChart" height="250"></canvas>
                 </div>
+                <div class="card-footer text-muted small">
+                    Shows risk score changes across recent scans for faster decision making.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-12">
+            <div class="card dashboard-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div><i class="bi bi-bar-chart-line me-2"></i>Top Vulnerable Applications</div>
+                    <span class="badge badge-soft text-danger">Top 10</span>
+                </div>
+                <div class="card-body py-4">
+                    <canvas id="topAppsChart" height="120"></canvas>
+                </div>
+                <div class="card-footer text-muted small">Applications ranked by total CVE counts.</div>
             </div>
         </div>
     </div>
 
     <div class="row g-4 mb-4">
         <div class="col-lg-6">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between">
-                    <span><i class="bi bi-clock-history me-2"></i>Recent Scans</span>
+            <div class="card dashboard-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-uppercase text-muted small mb-1">Latest scan activity</div>
+                        <div><i class="bi bi-clock-history me-2"></i>Recent Scans</div>
+                    </div>
                     <a href="{{ url_for('applications.index') }}" class="btn btn-sm btn-outline-primary">View All</a>
                 </div>
                 <div class="card-body p-0">
@@ -140,9 +278,12 @@
             </div>
         </div>
         <div class="col-lg-6">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between">
-                    <span><i class="bi bi-bug me-2"></i>Recent Vulnerabilities</span>
+            <div class="card dashboard-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-uppercase text-muted small mb-1">Top exposures</div>
+                        <div><i class="bi bi-bug me-2"></i>Recent Vulnerabilities</div>
+                    </div>
                     <a href="{{ url_for('vulnerabilities.index') }}" class="btn btn-sm btn-outline-primary">View All</a>
                 </div>
                 <div class="card-body p-0">
@@ -177,8 +318,14 @@
 
     <div class="row g-4">
         <div class="col-lg-8">
-            <div class="card">
-                <div class="card-header"><i class="bi bi-trophy me-2"></i>Top Risk Applications</div>
+            <div class="card dashboard-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-uppercase text-muted small mb-1">Most critical applications</div>
+                        <div><i class="bi bi-trophy me-2"></i>Top Risk Applications</div>
+                    </div>
+                    <span class="badge badge-soft text-danger">{{ top_risk_apps|length }} apps</span>
+                </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-hover mb-0">
@@ -258,7 +405,8 @@
     initDashboardCharts(
         {{ risk_distribution|tojson }},
         {{ severity_distribution|tojson }},
-        {{ scan_trend|tojson }}
+        {{ scan_trend|tojson }},
+        {{ top_vulnerable_apps|tojson }}
     );
 </script>
 {% endblock %}

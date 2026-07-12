@@ -3,12 +3,40 @@
 
 {% block content %}
 <div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-column flex-md-row gap-3">
         <div>
             <h2 class="fw-bold mb-1">Applications</h2>
             <p class="text-muted mb-0">Manage and monitor application supply chain risk profiles.</p>
         </div>
-        <a href="{{ url_for('upload.index') }}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Add Application</a>
+        <div class="d-flex gap-2 flex-wrap align-items-center">
+            <form class="row g-2 align-items-center" method="GET" action="{{ url_for('applications.index') }}">
+                <div class="col-auto">
+                    <input type="text" name="search" class="form-control form-control-sm" placeholder="Search apps or owners" value="{{ search_query }}">
+                </div>
+                <div class="col-auto">
+                    <select name="status" class="form-select form-select-sm">
+                        <option value="">All Statuses</option>
+                        <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Completed</option>
+                        <option value="running" {% if status_filter == 'running' %}selected{% endif %}>Running</option>
+                        <option value="queued" {% if status_filter == 'queued' %}selected{% endif %}>Queued</option>
+                        <option value="failed" {% if status_filter == 'failed' %}selected{% endif %}>Failed</option>
+                    </select>
+                </div>
+                <div class="col-auto">
+                    <select name="criticality" class="form-select form-select-sm">
+                        <option value="">All Criticalities</option>
+                        <option value="low" {% if criticality_filter == 'low' %}selected{% endif %}>Low</option>
+                        <option value="medium" {% if criticality_filter == 'medium' %}selected{% endif %}>Medium</option>
+                        <option value="high" {% if criticality_filter == 'high' %}selected{% endif %}>High</option>
+                        <option value="critical" {% if criticality_filter == 'critical' %}selected{% endif %}>Critical</option>
+                    </select>
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-sm btn-secondary"><i class="bi bi-search"></i></button>
+                </div>
+            </form>
+            <a href="{{ url_for('upload.index') }}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Add Application</a>
+        </div>
     </div>
 
     {% if not detail_mode %}
@@ -18,12 +46,14 @@
                 <table class="table table-hover mb-0">
                     <thead>
                         <tr>
-                            <th><a href="?sort=name&order={{ 'desc' if sort == 'name' and order == 'asc' else 'asc' }}">Application</a></th>
+                            <th>Application</th>
+                            <th>Payment API</th>
                             <th>Owner</th>
-                            <th><a href="?sort=criticality&order={{ 'desc' if sort == 'criticality' and order == 'asc' else 'asc' }}">Criticality</a></th>
+                            <th><a href="{{ url_for('applications.index', search=search_query, sort='criticality', order='desc' if sort == 'criticality' and order == 'asc' else 'asc') }}">Criticality</a></th>
                             <th>Dependencies</th>
-                            <th><a href="?sort=risk_score&order={{ 'desc' if sort == 'risk_score' and order == 'asc' else 'asc' }}">Risk Score</a></th>
-                            <th>Risk Level</th>
+                            <th><a href="{{ url_for('applications.index', search=search_query, sort='risk_score', order='desc' if sort == 'risk_score' and order == 'asc' else 'asc') }}">Risk Score</a></th>
+                            <th><a href="{{ url_for('applications.index', search=search_query, sort='status', order='desc' if sort == 'status' and order == 'asc' else 'asc') }}">Last Scan</a></th>
+                            <th>Status</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -34,6 +64,7 @@
                                 <strong>{{ app.name }}</strong>
                                 <br><small class="text-muted">{{ app.description[:60] if app.description else '' }}</small>
                             </td>
+                            <td>{{ app.payment_api|default('—') }}</td>
                             <td>{{ app.owner }}</td>
                             <td>
                                 <span class="badge {{ 'bg-dark' if app.business_criticality == 'critical' else 'bg-danger' if app.business_criticality == 'high' else 'bg-warning text-dark' if app.business_criticality == 'medium' else 'bg-secondary' }}">
@@ -41,23 +72,59 @@
                                 </span>
                             </td>
                             <td>{{ app.dependencies.count() }}</td>
-                            <td>
+                            <td style="width:260px">
                                 <div class="d-flex align-items-center gap-2">
-                                    <div class="progress flex-grow-1" style="height:8px; min-width:80px">
-                                        <div class="progress-bar {{ risk_badge_class(app.risk_level).replace('bg-','bg-') }}" style="width:{{ [app.risk_score, 100]|min }}%"></div>
+                                    <div class="progress flex-grow-1" style="height:10px; min-width:120px">
+                                        <div class="progress-bar {{ risk_badge_class(app.risk_level) }}" style="width:{{ [app.risk_score, 100]|min }}%"></div>
                                     </div>
-                                    <span>{{ app.risk_score }}</span>
+                                    <span class="text-monospace">{{ app.risk_score }}</span>
                                 </div>
                             </td>
-                            <td><span class="badge {{ risk_badge_class(app.risk_level) }}">{{ app.risk_level|upper }}</span></td>
                             <td>
-                                <a href="{{ url_for('applications.detail', app_id=app.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a>
-                                <a href="{{ url_for('dependencies.index', app_id=app.id) }}" class="btn btn-sm btn-outline-info"><i class="bi bi-diagram-3"></i></a>
+                                {% set last = last_scan_map.get(app.id) %}
+                                {% if last %}
+                                    <div><small>{{ last.created_at.strftime('%Y-%m-%d %H:%M') }}</small></div>
+                                {% else %}
+                                    <small class="text-muted">No scans</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge {{ 'bg-success' if app.status == 'completed' else 'bg-warning text-dark' if app.status == 'running' else 'bg-secondary' }}">{{ app.status|replace('_',' ')|title }}</span>
+                            </td>
+                            <td>
+                                <form method="POST" action="{{ url_for('applications.scan', app_id=app.id) }}" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-outline-primary" title="Scan Again"><i class="bi bi-arrow-repeat"></i></button>
+                                </form>
+                                <a href="{{ url_for('reports.index', application_id=app.id) }}" class="btn btn-sm btn-outline-info" title="View Reports"><i class="bi bi-file-earmark-text"></i></a>
+                                <a href="{{ url_for('dependencies.index', app_id=app.id) }}" class="btn btn-sm btn-outline-secondary" title="Dependencies"><i class="bi bi-diagram-3"></i></a>
+                                <form method="POST" action="{{ url_for('applications.delete', app_id=app.id) }}" class="d-inline ms-1" onsubmit="return confirm('Delete application "{{ app.name }}"? This cannot be undone.');">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                </form>
                             </td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
+            </div>
+        </div>
+        <div class="card-footer bg-dark text-muted">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-2">
+                <small>Showing {{ (page - 1) * pagination.per_page + 1 }} to {{ (page - 1) * pagination.per_page + applications|length }} of {{ pagination.total }} applications</small>
+                <nav>
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                            <a class="page-link" href="{{ url_for('applications.index', search=search_query, sort=sort, order=order, page=pagination.prev_num, status=status_filter, criticality=criticality_filter) }}">Previous</a>
+                        </li>
+                        {% for p in range(1, pagination.pages + 1) %}
+                        <li class="page-item {% if p == page %}active{% endif %}">
+                            <a class="page-link" href="{{ url_for('applications.index', search=search_query, sort=sort, order=order, page=p, status=status_filter, criticality=criticality_filter) }}">{{ p }}</a>
+                        </li>
+                        {% endfor %}
+                        <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                            <a class="page-link" href="{{ url_for('applications.index', search=search_query, sort=sort, order=order, page=pagination.next_num, status=status_filter, criticality=criticality_filter) }}">Next</a>
+                        </li>
+                    </ul>
+                </nav>
             </div>
         </div>
     </div>
